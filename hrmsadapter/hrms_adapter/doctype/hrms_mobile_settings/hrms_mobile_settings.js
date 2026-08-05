@@ -3,8 +3,6 @@ frappe.ui.form.on("HRMS Mobile Settings", {
 		frm.trigger("re_generate");
 	},
 	re_generate(frm) {
-		console.log("Hello KK");
-
 		frappe.call({
 			method: "hrmsadapter.api.v1.QR_code_generator.generate_qr_code",
 			args: {
