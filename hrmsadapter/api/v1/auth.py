@@ -202,6 +202,66 @@ def consume_qr_token(qr_token):
 	return success(data={"access_token": access_token, "status": "Consumed"})
 
 
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def validate_qr_token(token, device_id, platform=None, device_name=None,
+		os_version=None, app_version=None, device_model=None,
+		device_brand=None, fcm_token=None):
+	"""Mobile app (unauthenticated) exchanges a scanned QR token for a JWT."""
+	if not token or not device_id:
+		return error("token and device_id are required.", "MISSING_PARAMS", http_status_code=400)
+
+	cached = frappe.cache().get_value(f"hrms_mobile_token:{token}")
+	if not cached:
+		return error("QR code has expired or is invalid.", "QR_EXPIRED", http_status_code=401)
+
+	# One-time use — delete immediately to prevent replay attacks.
+	frappe.cache().delete_key(f"hrms_mobile_token:{token}")
+
+	user = cached.get("user")
+	if not user or user == "Guest":
+		return error("QR code is invalid.", "QR_INVALID", http_status_code=401)
+
+	raw_refresh, refresh_hash = auth_service.generate_refresh_token()
+	access_token = auth_service.generate_access_token(user, device_id)
+
+	auth_service.upsert_device(
+		user=user,
+		device_id=device_id,
+		refresh_token_hash=refresh_hash,
+		platform=platform,
+		device_name=device_name,
+		os_version=os_version,
+		app_version=app_version,
+		device_model=device_model,
+		device_brand=device_brand,
+		fcm_token=fcm_token,
+		ip=frappe.local.request_ip,
+	)
+
+	employee = frappe.db.get_value(
+		"Employee",
+		{"user_id": user, "status": "Active"},
+		["name", "employee_name", "image", "department", "designation", "company"],
+		as_dict=True,
+	)
+
+	settings = frappe.get_cached_doc("HRMS Mobile Settings")
+
+	return success(
+		data={
+			"access_token": access_token,
+			"refresh_token": raw_refresh,
+			"expires_in": (settings.jwt_expiry_hours or 24) * 3600,
+			"user": {
+				"email": user,
+				"full_name": frappe.db.get_value("User", user, "full_name"),
+				"user_image": frappe.db.get_value("User", user, "user_image"),
+			},
+			"employee": employee or {},
+		}
+	)
+
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
