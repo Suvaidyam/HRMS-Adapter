@@ -1,0 +1,209 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2026-08-03 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "to_user",
+  "notification_type",
+  "col_top",
+  "status",
+  "priority",
+  "section_content",
+  "title",
+  "body",
+  "image_url",
+  "deep_link",
+  "extra_data",
+  "section_source",
+  "reference_doctype",
+  "reference_name",
+  "from_user",
+  "section_delivery",
+  "fcm_message_id",
+  "sent_at",
+  "retry_count",
+  "max_retries",
+  "col_delivery",
+  "next_retry_at",
+  "failure_reason",
+  "section_read",
+  "is_read",
+  "read_at"
+ ],
+ "fields": [
+  {
+   "fieldname": "to_user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "To User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "default": "both",
+   "fieldname": "notification_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "push\nin_app\nboth"
+  },
+  {
+   "fieldname": "col_top",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nSent\nFailed\nSkipped"
+  },
+  {
+   "default": "normal",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "low\nnormal\nhigh"
+  },
+  {
+   "fieldname": "section_content",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Small Text",
+   "label": "Body",
+   "reqd": 1
+  },
+  {
+   "fieldname": "image_url",
+   "fieldtype": "Data",
+   "label": "Image URL"
+  },
+  {
+   "fieldname": "deep_link",
+   "fieldtype": "Data",
+   "label": "Deep Link"
+  },
+  {
+   "fieldname": "extra_data",
+   "fieldtype": "Long Text",
+   "label": "Extra Data (JSON)"
+  },
+  {
+   "fieldname": "section_source",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "reference_doctype"
+  },
+  {
+   "fieldname": "from_user",
+   "fieldtype": "Link",
+   "label": "From User",
+   "options": "User"
+  },
+  {
+   "fieldname": "section_delivery",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "fieldname": "fcm_message_id",
+   "fieldtype": "Data",
+   "label": "FCM Message ID"
+  },
+  {
+   "fieldname": "sent_at",
+   "fieldtype": "Datetime",
+   "label": "Sent At"
+  },
+  {
+   "default": "0",
+   "fieldname": "retry_count",
+   "fieldtype": "Int",
+   "label": "Retry Count"
+  },
+  {
+   "default": "3",
+   "fieldname": "max_retries",
+   "fieldtype": "Int",
+   "label": "Max Retries"
+  },
+  {
+   "fieldname": "col_delivery",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_retry_at",
+   "fieldtype": "Datetime",
+   "label": "Next Retry At"
+  },
+  {
+   "fieldname": "failure_reason",
+   "fieldtype": "Small Text",
+   "label": "Failure Reason"
+  },
+  {
+   "fieldname": "section_read",
+   "fieldtype": "Section Break",
+   "label": "Read Status"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_read",
+   "fieldtype": "Check",
+   "label": "Read"
+  },
+  {
+   "fieldname": "read_at",
+   "fieldtype": "Datetime",
+   "label": "Read At"
+  }
+ ],
+ "links": [],
+ "modified": "2026-08-03 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HRMS Adapter",
+ "name": "Mobile Notification",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Employee",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 0
+}

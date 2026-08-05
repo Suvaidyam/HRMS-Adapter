@@ -1,0 +1,337 @@
+{
+ "actions": [],
+ "creation": "2026-08-03 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "app_name",
+  "company_override",
+  "column_break_blkq",
+  "re_generate",
+  "qr_code",
+  "section_branding",
+  "primary_color",
+  "secondary_color",
+  "col_branding",
+  "logo_light",
+  "logo_dark",
+  "splash_image",
+  "section_version",
+  "app_version",
+  "min_supported_version",
+  "force_update_below",
+  "col_version",
+  "app_store_url_android",
+  "app_store_url_ios",
+  "section_features",
+  "enable_attendance",
+  "enable_leave",
+  "enable_expense",
+  "enable_payroll",
+  "col_features",
+  "enable_approvals",
+  "enable_checkin",
+  "enable_offline_sync",
+  "enable_announcements",
+  "section_auth",
+  "enable_qr_login",
+  "qr_token_expiry_minutes",
+  "jwt_secret",
+  "col_auth",
+  "jwt_expiry_hours",
+  "refresh_token_expiry_days",
+  "max_devices_per_user",
+  "section_fcm",
+  "enable_push_notifications",
+  "fcm_server_key",
+  "col_fcm",
+  "fcm_project_id",
+  "fcm_service_account_json",
+  "section_rate",
+  "enable_rate_limiting",
+  "rate_limit_per_minute",
+  "col_rate",
+  "rate_limit_auth_per_minute"
+ ],
+ "fields": [
+  {
+   "default": "HRMS",
+   "fieldname": "app_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "App Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "company_override",
+   "fieldtype": "Link",
+   "label": "Company Override",
+   "options": "Company"
+  },
+  {
+   "fieldname": "section_branding",
+   "fieldtype": "Section Break",
+   "label": "Branding"
+  },
+  {
+   "fieldname": "primary_color",
+   "fieldtype": "Color",
+   "label": "Primary Color"
+  },
+  {
+   "fieldname": "secondary_color",
+   "fieldtype": "Color",
+   "label": "Secondary Color"
+  },
+  {
+   "fieldname": "col_branding",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "logo_light",
+   "fieldtype": "Attach Image",
+   "label": "Logo (Light Theme)"
+  },
+  {
+   "fieldname": "logo_dark",
+   "fieldtype": "Attach Image",
+   "label": "Logo (Dark Theme)"
+  },
+  {
+   "fieldname": "splash_image",
+   "fieldtype": "Attach Image",
+   "label": "Splash Screen Image"
+  },
+  {
+   "fieldname": "section_version",
+   "fieldtype": "Section Break",
+   "label": "Version Management"
+  },
+  {
+   "fieldname": "app_version",
+   "fieldtype": "Data",
+   "label": "Current App Version"
+  },
+  {
+   "fieldname": "min_supported_version",
+   "fieldtype": "Data",
+   "label": "Minimum Supported Version"
+  },
+  {
+   "fieldname": "force_update_below",
+   "fieldtype": "Data",
+   "label": "Force Update Below Version"
+  },
+  {
+   "fieldname": "col_version",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_store_url_android",
+   "fieldtype": "Small Text",
+   "label": "Android Play Store URL"
+  },
+  {
+   "fieldname": "app_store_url_ios",
+   "fieldtype": "Small Text",
+   "label": "iOS App Store URL"
+  },
+  {
+   "fieldname": "section_features",
+   "fieldtype": "Section Break",
+   "label": "Feature Flags"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_attendance",
+   "fieldtype": "Check",
+   "label": "Enable Attendance"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_leave",
+   "fieldtype": "Check",
+   "label": "Enable Leave Management"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_expense",
+   "fieldtype": "Check",
+   "label": "Enable Expense Claims"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_payroll",
+   "fieldtype": "Check",
+   "label": "Enable Payroll"
+  },
+  {
+   "fieldname": "col_features",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_approvals",
+   "fieldtype": "Check",
+   "label": "Enable Approval Center"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_checkin",
+   "fieldtype": "Check",
+   "label": "Enable Geo Check-In"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_offline_sync",
+   "fieldtype": "Check",
+   "label": "Enable Offline Sync"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_announcements",
+   "fieldtype": "Check",
+   "label": "Enable Announcements"
+  },
+  {
+   "fieldname": "section_auth",
+   "fieldtype": "Section Break",
+   "label": "Authentication"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_qr_login",
+   "fieldtype": "Check",
+   "label": "Enable QR Login"
+  },
+  {
+   "default": "5",
+   "fieldname": "qr_token_expiry_minutes",
+   "fieldtype": "Int",
+   "label": "QR Token Expiry (minutes)"
+  },
+  {
+   "fieldname": "jwt_secret",
+   "fieldtype": "Password",
+   "label": "JWT Secret Key"
+  },
+  {
+   "fieldname": "col_auth",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "24",
+   "fieldname": "jwt_expiry_hours",
+   "fieldtype": "Int",
+   "label": "JWT Expiry (hours)"
+  },
+  {
+   "default": "30",
+   "fieldname": "refresh_token_expiry_days",
+   "fieldtype": "Int",
+   "label": "Refresh Token Expiry (days)"
+  },
+  {
+   "default": "5",
+   "fieldname": "max_devices_per_user",
+   "fieldtype": "Int",
+   "label": "Max Devices Per User"
+  },
+  {
+   "fieldname": "section_fcm",
+   "fieldtype": "Section Break",
+   "label": "Push Notifications (FCM)"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_push_notifications",
+   "fieldtype": "Check",
+   "label": "Enable Push Notifications"
+  },
+  {
+   "fieldname": "fcm_server_key",
+   "fieldtype": "Password",
+   "label": "FCM Server Key (Legacy)"
+  },
+  {
+   "fieldname": "col_fcm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fcm_project_id",
+   "fieldtype": "Data",
+   "label": "FCM Project ID"
+  },
+  {
+   "fieldname": "fcm_service_account_json",
+   "fieldtype": "Long Text",
+   "label": "FCM Service Account JSON"
+  },
+  {
+   "fieldname": "section_rate",
+   "fieldtype": "Section Break",
+   "label": "Rate Limiting"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_rate_limiting",
+   "fieldtype": "Check",
+   "label": "Enable Rate Limiting"
+  },
+  {
+   "default": "60",
+   "fieldname": "rate_limit_per_minute",
+   "fieldtype": "Int",
+   "label": "Requests Per Minute (General)"
+  },
+  {
+   "fieldname": "col_rate",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "10",
+   "fieldname": "rate_limit_auth_per_minute",
+   "fieldtype": "Int",
+   "label": "Requests Per Minute (Auth)"
+  },
+  {
+   "fieldname": "column_break_blkq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qr_code",
+   "fieldtype": "HTML",
+   "label": "QR Code"
+  },
+  {
+   "fieldname": "re_generate",
+   "fieldtype": "Button",
+   "label": "Re-Generate"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-05 08:41:24.373600",
+ "modified_by": "Administrator",
+ "module": "HRMS Adapter",
+ "name": "HRMS Mobile Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

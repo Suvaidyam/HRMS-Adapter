@@ -1,0 +1,214 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-08-03 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "user",
+  "employee",
+  "col_top",
+  "status",
+  "is_current",
+  "section_device",
+  "device_id",
+  "device_name",
+  "platform",
+  "os_version",
+  "app_version",
+  "col_device",
+  "device_model",
+  "device_brand",
+  "section_tokens",
+  "refresh_token_hash",
+  "refresh_token_expiry",
+  "last_login",
+  "last_active",
+  "section_fcm",
+  "fcm_token",
+  "fcm_token_updated",
+  "section_meta",
+  "registered_ip",
+  "last_ip",
+  "total_logins"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "MD-.YYYY.-"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "col_top",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Active\nRevoked\nExpired"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_current",
+   "fieldtype": "Check",
+   "label": "Is Current Session Device"
+  },
+  {
+   "fieldname": "section_device",
+   "fieldtype": "Section Break",
+   "label": "Device Information"
+  },
+  {
+   "fieldname": "device_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Device ID",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "label": "Device Name"
+  },
+  {
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Platform",
+   "options": "Android\niOS\nWeb"
+  },
+  {
+   "fieldname": "os_version",
+   "fieldtype": "Data",
+   "label": "OS Version"
+  },
+  {
+   "fieldname": "app_version",
+   "fieldtype": "Data",
+   "label": "App Version"
+  },
+  {
+   "fieldname": "col_device",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "device_model",
+   "fieldtype": "Data",
+   "label": "Device Model"
+  },
+  {
+   "fieldname": "device_brand",
+   "fieldtype": "Data",
+   "label": "Device Brand"
+  },
+  {
+   "fieldname": "section_tokens",
+   "fieldtype": "Section Break",
+   "label": "Authentication"
+  },
+  {
+   "fieldname": "refresh_token_hash",
+   "fieldtype": "Password",
+   "label": "Refresh Token Hash"
+  },
+  {
+   "fieldname": "refresh_token_expiry",
+   "fieldtype": "Datetime",
+   "label": "Refresh Token Expiry"
+  },
+  {
+   "fieldname": "last_login",
+   "fieldtype": "Datetime",
+   "label": "Last Login"
+  },
+  {
+   "fieldname": "last_active",
+   "fieldtype": "Datetime",
+   "label": "Last Active"
+  },
+  {
+   "fieldname": "section_fcm",
+   "fieldtype": "Section Break",
+   "label": "Push Notification"
+  },
+  {
+   "fieldname": "fcm_token",
+   "fieldtype": "Small Text",
+   "label": "FCM Token"
+  },
+  {
+   "fieldname": "fcm_token_updated",
+   "fieldtype": "Datetime",
+   "label": "FCM Token Updated At"
+  },
+  {
+   "fieldname": "section_meta",
+   "fieldtype": "Section Break",
+   "label": "Metadata"
+  },
+  {
+   "fieldname": "registered_ip",
+   "fieldtype": "Data",
+   "label": "Registration IP"
+  },
+  {
+   "fieldname": "last_ip",
+   "fieldtype": "Data",
+   "label": "Last IP Address"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_logins",
+   "fieldtype": "Int",
+   "label": "Total Logins"
+  }
+ ],
+ "links": [],
+ "modified": "2026-08-03 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "HRMS Adapter",
+ "name": "Mobile Device",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Employee",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "device_name",
+ "track_changes": 0
+}

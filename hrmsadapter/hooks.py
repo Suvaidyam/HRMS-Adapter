@@ -1,249 +1,84 @@
 app_name = "hrmsadapter"
-app_title = "Hrmsadapter"
+app_title = "HRMS Adapter"
 app_publisher = "Suvaidyam"
-app_description = "A supporting application for QR code generation integrated with the HRMS application."
+app_description = "Mobile middleware adapter for ERPNext HRMS — Flutter app layer"
 app_email = "tech@suvaidyam.com"
 app_license = "mit"
+app_icon = "octicon octicon-device-mobile"
+app_color = "#4A90E2"
 
-# Apps
-# ------------------
-
-# required_apps = []
-
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "hrmsadapter",
-# 		"logo": "/assets/hrmsadapter/logo.png",
-# 		"title": "Hrmsadapter",
-# 		"route": "/hrmsadapter",
-# 		"has_permission": "hrmsadapter.api.permission.has_app_permission"
-# 	}
-# ]
-
-# Includes in <head>
-# ------------------
-
-# include js, css files in header of desk.html
-# app_include_css = "/assets/hrmsadapter/css/hrmsadapter.css"
-# app_include_js = "/assets/hrmsadapter/js/hrmsadapter.js"
-
-# include js, css files in header of web template
-# web_include_css = "/assets/hrmsadapter/css/hrmsadapter.css"
-# web_include_js = "/assets/hrmsadapter/js/hrmsadapter.js"
-
-# include custom scss in every website theme (without file extension ".scss")
-# website_theme_scss = "hrmsadapter/public/scss/website"
-
-# include js, css files in header of web form
-# webform_include_js = {"doctype": "public/js/doctype.js"}
-# webform_include_css = {"doctype": "public/css/doctype.css"}
-
-# include js in page
-# page_js = {"page" : "public/js/file.js"}
-
-# include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
-# doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
-# doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
-
-# Svg Icons
-# ------------------
-# include app icons in desk
-# app_include_icons = "hrmsadapter/public/icons.svg"
-
-# Home Pages
-# ----------
-
-# application home page (will override Website Settings)
-# home_page = "login"
-
-# website user home page (by Role)
-# role_home_page = {
-# 	"Role": "home_page"
-# }
-
-# Generators
-# ----------
-
-# automatically create page for each record of this doctype
-# website_generators = ["Web Page"]
-
-# Jinja
-# ----------
-
-# add methods and filters to jinja environment
-# jinja = {
-# 	"methods": "hrmsadapter.utils.jinja_methods",
-# 	"filters": "hrmsadapter.utils.jinja_filters"
-# }
+required_apps = ["erpnext", "hrms"]
 
 # Installation
-# ------------
+after_install = "hrmsadapter.install.after_install"
+before_uninstall = "hrmsadapter.install.before_uninstall"
 
-# before_install = "hrmsadapter.install.before_install"
-# after_install = "hrmsadapter.install.after_install"
+# -------------------------------------------------------------------------
+# Document Events — Workflow Notification Triggers  [Phase 7]
+# -------------------------------------------------------------------------
+doc_events = {
+	"Leave Application": {
+		"on_submit": "hrmsadapter.services.notification_service.on_leave_application_submit",
+		"on_update": "hrmsadapter.services.notification_service.on_leave_application_update",
+		"on_cancel": "hrmsadapter.services.notification_service.on_leave_application_cancel",
+	},
+	"Expense Claim": {
+		"on_submit": "hrmsadapter.services.notification_service.on_expense_claim_submit",
+		"on_update": "hrmsadapter.services.notification_service.on_expense_claim_update",
+	},
+	"Shift Request": {
+		"on_submit": "hrmsadapter.services.notification_service.on_shift_request_submit",
+		"on_update": "hrmsadapter.services.notification_service.on_shift_request_update",
+	},
+	"Attendance Request": {
+		"on_submit": "hrmsadapter.services.notification_service.on_attendance_request_submit",
+	},
+	"Travel Request": {
+		"on_submit": "hrmsadapter.services.notification_service.on_travel_request_submit",
+		"on_update": "hrmsadapter.services.notification_service.on_travel_request_update",
+	},
+	"Loan Application": {
+		"on_submit": "hrmsadapter.services.notification_service.on_loan_application_submit",
+		"on_update": "hrmsadapter.services.notification_service.on_loan_application_update",
+	},
+	"Appraisal": {
+		"on_submit": "hrmsadapter.services.notification_service.on_appraisal_submit",
+	},
+	"Employee Advance": {
+		"on_update": "hrmsadapter.services.notification_service.on_advance_update",
+	},
+	"User": {
+		"on_update": "hrmsadapter.services.auth_service.on_user_update",
+	},
+}
 
-# Uninstallation
-# ------------
+# -------------------------------------------------------------------------
+# Scheduled Tasks  [Phase 7 / Phase 10]
+# -------------------------------------------------------------------------
+scheduler_events = {
+	"all": [
+		"hrmsadapter.tasks.notification_queue.process_notification_queue",
+	],
+	"hourly": [
+		"hrmsadapter.tasks.token_cleanup.expire_qr_tokens",
+		"hrmsadapter.tasks.token_cleanup.cleanup_blacklisted_tokens",
+	],
+	"daily": [
+		"hrmsadapter.tasks.token_cleanup.purge_old_api_logs",
+		"hrmsadapter.tasks.token_cleanup.expire_inactive_devices",
+	],
+}
 
-# before_uninstall = "hrmsadapter.uninstall.before_uninstall"
-# after_uninstall = "hrmsadapter.uninstall.after_uninstall"
+# -------------------------------------------------------------------------
+# Request Lifecycle  [Phase 2 / Phase 10]
+# -------------------------------------------------------------------------
+before_request = ["hrmsadapter.decorators.auth.validate_mobile_jwt_if_present"]
+after_request = ["hrmsadapter.utils.audit.log_api_request"]
 
-# Integration Setup
-# ------------------
-# To set up dependencies/integrations with other apps
-# Name of the app being installed is passed as an argument
-
-# before_app_install = "hrmsadapter.utils.before_app_install"
-# after_app_install = "hrmsadapter.utils.after_app_install"
-
-# Integration Cleanup
-# -------------------
-# To clean up dependencies/integrations with other apps
-# Name of the app being uninstalled is passed as an argument
-
-# before_app_uninstall = "hrmsadapter.utils.before_app_uninstall"
-# after_app_uninstall = "hrmsadapter.utils.after_app_uninstall"
-
-# Desk Notifications
-# ------------------
-# See frappe.core.notifications.get_notification_config
-
-# notification_config = "hrmsadapter.notifications.get_notification_config"
-
-# Permissions
-# -----------
-# Permissions evaluated in scripted ways
-
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
-
-# DocType Class
-# ---------------
-# Override standard doctype classes
-
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
-
-# Document Events
-# ---------------
-# Hook on document methods and events
-
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
-
-# Scheduled Tasks
-# ---------------
-
-# scheduler_events = {
-# 	"all": [
-# 		"hrmsadapter.tasks.all"
-# 	],
-# 	"daily": [
-# 		"hrmsadapter.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"hrmsadapter.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"hrmsadapter.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"hrmsadapter.tasks.monthly"
-# 	],
-# }
-
-# Testing
-# -------
-
-# before_tests = "hrmsadapter.install.before_tests"
-
-# Overriding Methods
-# ------------------------------
-#
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "hrmsadapter.event.get_events"
-# }
-#
-# each overriding function accepts a `data` argument;
-# generated from the base implementation of the doctype dashboard,
-# along with any modifications made in other Frappe apps
-# override_doctype_dashboards = {
-# 	"Task": "hrmsadapter.task.get_dashboard_data"
-# }
-
-# exempt linked doctypes from being automatically cancelled
-#
-# auto_cancel_exempted_doctypes = ["Auto Repeat"]
-
-# Ignore links to specified DocTypes when deleting documents
-# -----------------------------------------------------------
-
-# ignore_links_on_delete = ["Communication", "ToDo"]
-
-# Request Events
-# ----------------
-# before_request = ["hrmsadapter.utils.before_request"]
-# after_request = ["hrmsadapter.utils.after_request"]
-
-# Job Events
-# ----------
-# before_job = ["hrmsadapter.utils.before_job"]
-# after_job = ["hrmsadapter.utils.after_job"]
-
-# User Data Protection
-# --------------------
-
-# user_data_fields = [
-# 	{
-# 		"doctype": "{doctype_1}",
-# 		"filter_by": "{filter_by}",
-# 		"redact_fields": ["{field_1}", "{field_2}"],
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_2}",
-# 		"filter_by": "{filter_by}",
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_3}",
-# 		"strict": False,
-# 	},
-# 	{
-# 		"doctype": "{doctype_4}"
-# 	}
-# ]
-
-# Authentication and authorization
-# --------------------------------
-
-# auth_hooks = [
-# 	"hrmsadapter.auth.validate"
-# ]
-
-# Automatically update python controller files with type annotations for this app.
-# export_python_type_annotations = True
-
-# default_log_clearing_doctypes = {
-# 	"Logging DocType Name": 30  # days to retain logs
-# }
-
-# Translation
-# ------------
-# List of apps whose translatable strings should be excluded from this app's translations.
-# ignore_translatable_strings_from = []
-
+# -------------------------------------------------------------------------
+# Log Retention  [Phase 10]
+# -------------------------------------------------------------------------
+default_log_clearing_doctypes = {
+	"Mobile API Log": 30,
+	"QR Login Token": 1,
+}
