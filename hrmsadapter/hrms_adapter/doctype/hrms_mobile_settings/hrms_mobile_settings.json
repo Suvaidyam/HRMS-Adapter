@@ -1,12 +1,15 @@
 {
  "actions": [],
- "creation": "2026-08-03 00:00:00.000000",
+ "creation": "2026-08-03 00:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "app_name",
   "company_override",
+  "column_break_blkq",
+  "re_generate",
+  "qr_code",
   "section_branding",
   "primary_color",
   "secondary_color",
@@ -291,11 +294,25 @@
    "fieldname": "rate_limit_auth_per_minute",
    "fieldtype": "Int",
    "label": "Requests Per Minute (Auth)"
+  },
+  {
+   "fieldname": "column_break_blkq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qr_code",
+   "fieldtype": "HTML",
+   "label": "QR Code"
+  },
+  {
+   "fieldname": "re_generate",
+   "fieldtype": "Button",
+   "label": "Re-Generate"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-03 00:00:00.000000",
+ "modified": "2026-08-05 08:41:24.373600",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "HRMS Mobile Settings",
@@ -312,7 +329,9 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }
