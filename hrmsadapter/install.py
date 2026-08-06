@@ -10,7 +10,6 @@ def before_uninstall():
 	frappe.db.delete("Mobile Device")
 	frappe.db.delete("QR Login Token")
 	frappe.db.delete("Mobile Notification")
-	frappe.db.delete("Mobile API Log")
 	frappe.db.delete("Mobile Field Mapping")
 
 
