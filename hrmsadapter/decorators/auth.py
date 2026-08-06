@@ -40,7 +40,10 @@ def validate_mobile_jwt_if_present():
 	except frappe.AuthenticationError:
 		raise
 	except Exception:
-		pass
+		# Was a silent `pass`, which turned a misconfiguration (rotated jwt_secret,
+		# missing settings) into an opaque 401 with nothing in the Error Log.
+		frappe.log_error(frappe.get_traceback(), "hrmsadapter: mobile JWT auth failure")
+		frappe.throw("Could not validate the session token.", frappe.AuthenticationError)
 
 
 # ---------------------------------------------------------------------------
@@ -57,6 +60,17 @@ def _authenticate_bearer(token: str):
 	from hrmsadapter.services import auth_service
 
 	claims = auth_service.validate_token(token)
+
+	# Before set_user, so a rejected token never switches the session user.
+	auth_service.assert_device_session_valid(claims)
+
+	# frappe.set_user() resets local.form_dict, and make_form_dict() has already run
+	# by the time before_request hooks fire — so without this every parameter of the
+	# request is lost. Frappe's own OAuth path preserves it the same way.
+	form_dict = getattr(frappe.local, "form_dict", None)
 	frappe.set_user(claims["sub"])
+	if form_dict is not None:
+		frappe.local.form_dict = form_dict
+
 	frappe.local.mobile_device_id = claims.get("device_id")
 	frappe.local.mobile_jwt_claims = claims

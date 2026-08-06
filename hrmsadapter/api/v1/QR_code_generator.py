@@ -6,6 +6,8 @@ import secrets
 
 from io import BytesIO
 
+from frappe.utils import cint
+
 
 @frappe.whitelist()
 def generate_qr_code():
@@ -15,7 +17,10 @@ def generate_qr_code():
   # Generate Secure Token
   token = secrets.token_urlsafe(32)
 
-  # Store in Redis for 5 minutes
+  # form_dict values arrive as strings, so coerce before doing arithmetic
+  expiry_in_minutes = cint(data.get("expiry_in_minutes")) or 5
+
+  # Store in Redis until the token expires
   frappe.cache().set_value(
     f"hrms_mobile_token:{token}",
     {
@@ -23,7 +28,7 @@ def generate_qr_code():
       "company": data.get("company"),
       "name": data.get("name"),
     },
-    expires_in_sec=300
+    expires_in_sec=expiry_in_minutes * 60
   )
 
   # Data stored inside QR

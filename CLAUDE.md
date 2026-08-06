@@ -11,7 +11,7 @@
 `hrmsadapter` (app title **"HRMS Adapter"**, publisher **Suvaidyam**) is a **mobile middleware adapter** that exposes **ERPNext + Frappe HR** to a **Flutter mobile app** through a versioned REST API. It is a thin layer:
 
 - It **does not own HR data.** Employee, Leave, Expense, Attendance, Payroll, etc. live in `erpnext`/`hrms`. This app reads/writes them through Frappe's ORM.
-- It **owns only mobile plumbing:** JWT/refresh tokens, QR desktop-login, device registry, push notifications, API audit logs, and field-mapping/branding config.
+- It **owns only mobile plumbing:** JWT/refresh tokens, QR desktop-login, device registry, push notifications, and field-mapping/branding config.
 - `required_apps = ["erpnext", "hrms"]` — never assume those doctypes are optional.
 
 **Request lifecycle (memorise this):**
@@ -20,7 +20,6 @@
 HTTP request
   → before_request:  decorators.auth.validate_mobile_jwt_if_present   (sets frappe.session.user from Bearer JWT)
   → api/v1/<module>.<fn>   (whitelisted, thin)  →  services/<x>_service   (business logic)  →  utils/response  (envelope)
-  → after_request:   utils.audit.log_api_request   (async Mobile API Log)
 ```
 
 ---
@@ -33,11 +32,11 @@ This is a **strict layered architecture**. Respect the boundaries — do not put
 | -------------- | ----------------------- | ------------------------------------------------------------------------------ | ---- |
 | **API**        | `api/v1/*.py`           | Whitelisted HTTP endpoints. Parse params, call a service, wrap in `response`.   | Keep **thin**. No JWT logic, no raw SQL, no FCM calls here. |
 | **Service**    | `services/*_service.py` | All business logic, ORM access, token/QR/notification logic.                    | Returns **plain Python** (dict/str/None), **never** a response envelope. |
-| **Utils**      | `utils/*.py`            | `response` (envelope), `validators` (guards), `audit` (logging).                | Pure helpers. No endpoint-specific logic. |
+| **Utils**      | `utils/*.py`            | `response` (envelope), `validators` (guards).                                   | Pure helpers. No endpoint-specific logic. |
 | **Decorators** | `decorators/auth.py`    | `require_mobile_auth`, `validate_mobile_jwt_if_present`.                         | Auth only. |
 | **Doctypes**   | `hrms_adapter/doctype/` | Persistent state: settings, devices, tokens, notifications, logs, mappings.     | Controllers stay minimal. |
 | **Tasks**      | `tasks/*.py`            | Scheduled jobs (queue drain, cleanup). Wired in `hooks.py`.                      | Idempotent, exception-safe. |
-| **hooks.py**   | root                    | The wiring: `doc_events`, `scheduler_events`, `before/after_request`, retention. | Change deliberately — see §6. |
+| **hooks.py**   | root                    | The wiring: `doc_events`, `scheduler_events`, `before_request`, retention.      | Change deliberately — see §6. |
 
 **Golden rule of a request handler:**
 
@@ -151,7 +150,7 @@ These areas break the mobile app or security if changed carelessly. Change only 
 | Area | Why it's sensitive |
 | ---- | ------------------ |
 | **`utils/response.py` envelope shape / `api_version`** | Public contract; the Flutter client parses this exact structure. |
-| **`hooks.py` `before_request` / `after_request`** | Auth (`validate_mobile_jwt_if_present`) and audit run for *every* request. A bug here breaks or unsecures the whole API. |
+| **`hooks.py` `before_request`** | Auth (`validate_mobile_jwt_if_present`) runs for *every* request. A bug here breaks or unsecures the whole API. |
 | **`hooks.py` `doc_events`** | Each entry ties an HR doctype event to a notification. Removing one silently kills notifications. |
 | **`services/auth_service.py`** | JWT signing/validation, refresh rotation, blacklist, QR lifecycle, device-limit enforcement. Security-critical. |
 | **Secrets** (`jwt_secret`, `fcm_server_key`, `fcm_service_account_json`) | Read via `get_password(...)`. Never log, print, return in a response, or commit. Rotating `jwt_secret` invalidates all live tokens. |
@@ -173,10 +172,10 @@ pre-commit run --all-files                              # ruff / eslint / pretti
 ```
 
 **Debugging checklist:**
-- **API failing?** Inspect the **Mobile API Log** DocType (written async by `after_request`) — it records endpoint, method, response code, error type, IP, device.
+- **API failing?** There is no request audit log — check the **Error Log** DocType and the `bench start` / web-worker console output for the traceback.
 - **Auth issues?** Confirm the Bearer token, check `frappe.local.mobile_jwt_claims`, and remember the JTI blacklist lives in Redis (`mobile_jwt_blacklist:{jti}`).
 - **Notification stuck?** They sit in **Mobile Notification** (`status = Pending`) until the `all` scheduler event `process_notification_queue` drains them — verify the scheduler is running.
-- **Server errors:** `frappe.log_error(...)` / the Error Log DocType. Services already wrap risky work in try/except (e.g. `_invoke_hooks`, `audit`).
+- **Server errors:** `frappe.log_error(...)` / the Error Log DocType. Services already wrap risky work in try/except (e.g. `_invoke_hooks`).
 - Trace end-to-end: `api/v1/<fn>` → the `<x>_service` it calls → the doctype it touches.
 
 ---
@@ -200,7 +199,7 @@ pre-commit run --all-files                              # ruff / eslint / pretti
 5. **Don't break existing functionality.** Assume every endpoint, doc-event, and scheduled task is in use. If a change could affect others, call it out.
 6. **Follow existing patterns strictly.** Copy the shape of the nearest sibling (e.g. model a new endpoint on `leave.py`, a new notification trigger on an existing `on_*_submit`).
 7. **Respect security.** Never expose or log secrets; keep `allow_guest` minimal; validate input; use `ignore_permissions=True` only where the existing code already does and it is justified.
-8. **Verify realistically.** Prefer `bench run-tests --app hrmsadapter` and reading **Mobile API Log** over assumptions. State clearly what you changed and what you did/didn't test.
+8. **Verify realistically.** Prefer `bench run-tests --app hrmsadapter` and reading the **Error Log** over assumptions. State clearly what you changed and what you did/didn't test.
 9. **Ask when ambiguous.** If a request would break a contract in §6 or require a new domain/DocType, surface the trade-off and confirm before proceeding.
 
 ---
