@@ -10,6 +10,8 @@ from frappe.utils import now_datetime
 from hrmsadapter.services import auth_service
 from hrmsadapter.utils.response import error, success
 
+BLOCKED_MESSAGE = "This device has been blocked. Contact your HR administrator."
+
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def login(usr, pwd, device_id, platform=None, device_name=None, os_version=None,
@@ -22,6 +24,10 @@ def login(usr, pwd, device_id, platform=None, device_name=None, os_version=None,
 		return error("usr and pwd are required.", "MISSING_PARAMS", http_status_code=400)
 	if not device_id:
 		return error("device_id is required.", "MISSING_PARAMS", http_status_code=400)
+
+	# Checked before authenticating so a blocked device never gets a Frappe session.
+	if auth_service.is_device_blocked(device_id):
+		return error(BLOCKED_MESSAGE, "DEVICE_BLOCKED", http_status_code=403)
 
 	# Delegate credential check to Frappe's login manager
 	login_manager = frappe.auth.LoginManager()
@@ -39,19 +45,25 @@ def login(usr, pwd, device_id, platform=None, device_name=None, os_version=None,
 	access_token = auth_service.generate_access_token(user, device_id)
 
 	# Upsert device
-	auth_service.upsert_device(
-		user=user,
-		device_id=device_id,
-		refresh_token_hash=refresh_hash,
-		platform=platform,
-		device_name=device_name,
-		os_version=os_version,
-		app_version=app_version,
-		device_model=device_model,
-		device_brand=device_brand,
-		fcm_token=fcm_token,
-		ip=frappe.local.request_ip,
-	)
+	try:
+		device = auth_service.upsert_device(
+			user=user,
+			device_id=device_id,
+			refresh_token_hash=refresh_hash,
+			platform=platform,
+			device_name=device_name,
+			os_version=os_version,
+			app_version=app_version,
+			device_model=device_model,
+			device_brand=device_brand,
+			fcm_token=fcm_token,
+			ip=frappe.local.request_ip,
+		)
+	except auth_service.DeviceBlockedError:
+		# Blocked between the pre-check and here. Undo the session we just created.
+		frappe.db.rollback()
+		frappe.clear_messages()
+		return error(BLOCKED_MESSAGE, "DEVICE_BLOCKED", http_status_code=403)
 
 	employee = frappe.db.get_value(
 		"Employee",
@@ -75,7 +87,9 @@ def login(usr, pwd, device_id, platform=None, device_name=None, os_version=None,
 				"user_image": frappe.db.get_value("User", user, "user_image"),
 			},
 			"employee": employee or {},
-		}
+			"evicted_devices": device["evicted"],
+		},
+		message=_eviction_message(device["evicted"]),
 	)
 
 
@@ -124,6 +138,14 @@ def refresh_token(refresh_token, device_id):
 			update_modified=False,
 		)
 
+	# A device that only ever refreshes must not look inactive to the nightly sweep.
+	frappe.db.set_value(
+		"Mobile Device",
+		device_name,
+		{"last_active": now_datetime(), "last_ip": frappe.local.request_ip},
+		update_modified=False,
+	)
+
 	response_data = {
 		"access_token": new_access_token,
 		"expires_in": (settings.jwt_expiry_hours or 24) * 3600,
@@ -143,23 +165,22 @@ def logout(device_id=None):
 	if claims.get("jti") and claims.get("exp"):
 		auth_service.blacklist_token(claims["jti"], claims["exp"])
 
+	# Via deactivate_device so the refresh token is really invalidated — the old
+	# set_value left every "revoked" device able to resurrect itself via refresh.
 	if device_id:
-		frappe.db.set_value(
-			"Mobile Device",
-			{"device_id": device_id, "user": user},
-			"status",
-			"Revoked",
+		names = frappe.get_all(
+			"Mobile Device", filters={"device_id": device_id, "user": user}, pluck="name"
 		)
 	else:
-		frappe.db.set_value(
-			"Mobile Device",
-			{"user": user, "status": "Active"},
-			"status",
-			"Revoked",
+		names = frappe.get_all(
+			"Mobile Device", filters={"user": user, "status": "Active"}, pluck="name"
 		)
 
+	for name in names:
+		auth_service.deactivate_device(name, "Revoked", "Logout")
+
 	frappe.db.commit()
-	return success(data={"message": "Logged out successfully."})
+	return success(data={"message": "Logged out successfully.", "devices_revoked": len(names)})
 
 
 # ---------------------------------------------------------------------------
@@ -202,9 +223,87 @@ def consume_qr_token(qr_token):
 	return success(data={"access_token": access_token, "status": "Consumed"})
 
 
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def validate_qr_token(token, device_id, platform=None, device_name=None,
+		os_version=None, app_version=None, device_model=None,
+		device_brand=None, fcm_token=None):
+	"""Mobile app (unauthenticated) exchanges a scanned QR token for a JWT."""
+	if not token or not device_id:
+		return error("token and device_id are required.", "MISSING_PARAMS", http_status_code=400)
+
+	if auth_service.is_device_blocked(device_id):
+		return error(BLOCKED_MESSAGE, "DEVICE_BLOCKED", http_status_code=403)
+
+	cached = frappe.cache().get_value(f"hrms_mobile_token:{token}")
+	if not cached:
+		return error("QR code has expired or is invalid.", "QR_EXPIRED", http_status_code=401)
+
+	# One-time use — delete immediately to prevent replay attacks.
+	frappe.cache().delete_key(f"hrms_mobile_token:{token}")
+
+	user = cached.get("user")
+	if not user or user == "Guest":
+		return error("QR code is invalid.", "QR_INVALID", http_status_code=401)
+
+	raw_refresh, refresh_hash = auth_service.generate_refresh_token()
+	access_token = auth_service.generate_access_token(user, device_id)
+
+	try:
+		device = auth_service.upsert_device(
+			user=user,
+			device_id=device_id,
+			refresh_token_hash=refresh_hash,
+			platform=platform,
+			device_name=device_name,
+			os_version=os_version,
+			app_version=app_version,
+			device_model=device_model,
+			device_brand=device_brand,
+			fcm_token=fcm_token,
+			ip=frappe.local.request_ip,
+		)
+	except auth_service.DeviceBlockedError:
+		frappe.db.rollback()
+		frappe.clear_messages()
+		return error(BLOCKED_MESSAGE, "DEVICE_BLOCKED", http_status_code=403)
+
+	employee = frappe.db.get_value(
+		"Employee",
+		{"user_id": user, "status": "Active"},
+		["name", "employee_name", "image", "department", "designation", "company"],
+		as_dict=True,
+	)
+
+	settings = frappe.get_cached_doc("HRMS Mobile Settings")
+
+	return success(
+		data={
+			"access_token": access_token,
+			"refresh_token": raw_refresh,
+			"expires_in": (settings.jwt_expiry_hours or 24) * 3600,
+			"user": {
+				"email": user,
+				"full_name": frappe.db.get_value("User", user, "full_name"),
+				"user_image": frappe.db.get_value("User", user, "user_image"),
+			},
+			"employee": employee or {},
+			"evicted_devices": device["evicted"],
+		},
+		message=_eviction_message(device["evicted"]),
+	)
+
+
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+
+def _eviction_message(evicted: list) -> str:
+	"""Human message when the device limit signed older sessions out."""
+	if not evicted:
+		return None
+	names = ", ".join(d.get("device_name") or d.get("device_id") for d in evicted)
+	return f"Device limit reached — signed out of {len(evicted)} older device(s): {names}."
+
 
 def _invoke_hooks(event: str, **kwargs):
 	for hook in frappe.get_hooks(event):

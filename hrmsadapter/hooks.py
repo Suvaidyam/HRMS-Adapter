@@ -64,7 +64,6 @@ scheduler_events = {
 		"hrmsadapter.tasks.token_cleanup.cleanup_blacklisted_tokens",
 	],
 	"daily": [
-		"hrmsadapter.tasks.token_cleanup.purge_old_api_logs",
 		"hrmsadapter.tasks.token_cleanup.expire_inactive_devices",
 	],
 }
@@ -73,12 +72,10 @@ scheduler_events = {
 # Request Lifecycle  [Phase 2 / Phase 10]
 # -------------------------------------------------------------------------
 before_request = ["hrmsadapter.decorators.auth.validate_mobile_jwt_if_present"]
-after_request = ["hrmsadapter.utils.audit.log_api_request"]
 
 # -------------------------------------------------------------------------
 # Log Retention  [Phase 10]
 # -------------------------------------------------------------------------
 default_log_clearing_doctypes = {
-	"Mobile API Log": 30,
 	"QR Login Token": 1,
 }

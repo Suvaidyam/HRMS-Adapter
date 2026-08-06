@@ -107,8 +107,8 @@ Almost everything is configured from a **single singleton DocType**: open **HRMS
 
 | Group             | Fields                                                                                                   | Purpose                                                        |
 | ----------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| **Branding**      | `app_name`, `primary_color`, `secondary_color`, `logo_light`, `logo_dark`, `splash_image`, `company_override` | Remote theming served to the app via `settings.get_branding`  |
-| **Versioning**    | `app_version`, `min_supported_version`, `force_update_below`, `app_store_url_android/ios`                 | Force-update gating for old app builds                        |
+| **Branding**      | `app_name`, `primary_color`, `logo_light`, `company_override`                                             | Remote theming served to the app via `settings.get_branding`  |
+| **Store links**   | `app_store_url_android`, `app_store_url_ios`                                                              | Store URLs returned in `get_branding.store_urls`              |
 | **Feature flags** | `enable_attendance`, `enable_leave`, `enable_expense`, `enable_payroll`, `enable_approvals`, `enable_checkin`, `enable_offline_sync`, `enable_announcements`, `enable_qr_login` | Turn features on/off remotely (`settings.get_feature_flags`)  |
 | **Auth / JWT**    | `jwt_secret` 🔒, `jwt_expiry_hours` (24), `refresh_token_expiry_days` (30), `max_devices_per_user` (5), `qr_token_expiry_minutes` (5) | Token lifetimes and device limits                             |
 | **Push (FCM)**    | `enable_push_notifications`, `fcm_server_key` 🔒, `fcm_project_id`, `fcm_service_account_json`            | Firebase Cloud Messaging credentials                          |
@@ -161,19 +161,17 @@ hrmsadapter/
 │
 ├── utils/                       # ── SHARED HELPERS ─────────────────────────────
 │   ├── response.py              #    success() / error() / paginated() envelope  ⭐
-│   ├── validators.py            #    require_params, get_current_employee, clamp_pagination …
-│   └── audit.py                 #    after_request → async Mobile API Log writer
+│   └── validators.py            #    require_params, get_current_employee, clamp_pagination …
 │
 ├── tasks/                       # ── SCHEDULED JOBS ─────────────────────────────
 │   ├── notification_queue.py    #    process_notification_queue (every "all" tick)
-│   └── token_cleanup.py         #    expire QR tokens, purge logs, expire devices
+│   └── token_cleanup.py         #    expire QR tokens, expire inactive devices
 │
 ├── hrms_adapter/doctype/        # ── DATA MODEL (note: folder is hrms_adapter) ───
 │   ├── hrms_mobile_settings/    #    Singleton config (see above)
 │   ├── mobile_device/           #    One row per logged-in device
 │   ├── qr_login_token/          #    Short-lived desktop-login tokens
 │   ├── mobile_notification/     #    Outgoing/in-app notification records + retry state
-│   ├── mobile_api_log/          #    Request audit log (auto-purged after 30 days)
 │   └── mobile_field_mapping/    #    Maps internal fieldname → mobile_key alias
 │
 ├── patches/v1_0/                # Data migrations (e.g. create_default_settings)

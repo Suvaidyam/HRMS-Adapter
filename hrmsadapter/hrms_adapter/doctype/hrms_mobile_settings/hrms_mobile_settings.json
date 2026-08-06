@@ -1,26 +1,42 @@
 {
  "actions": [],
- "creation": "2026-08-03 00:00:00.000000",
+ "creation": "2026-08-03 00:00:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "qr_code",
+  "re_generate",
+  "column_break_zvyg",
   "app_name",
   "company_override",
-  "section_branding",
+  "column_break_shui",
   "primary_color",
-  "secondary_color",
-  "col_branding",
   "logo_light",
-  "logo_dark",
-  "splash_image",
-  "section_version",
-  "app_version",
-  "min_supported_version",
-  "force_update_below",
-  "col_version",
+  "section_break_ipwq",
   "app_store_url_android",
+  "column_break_veic",
   "app_store_url_ios",
+  "section_fcm",
+  "fcm_server_key",
+  "enable_push_notifications",
+  "col_fcm",
+  "fcm_project_id",
+  "rate_limit_and_authentication_tab",
+  "section_auth",
+  "enable_qr_login",
+  "qr_token_expiry_minutes",
+  "jwt_secret",
+  "col_auth",
+  "jwt_expiry_hours",
+  "refresh_token_expiry_days",
+  "max_devices_per_user",
+  "section_rate",
+  "rate_limit_per_minute",
+  "enable_rate_limiting",
+  "col_rate",
+  "rate_limit_auth_per_minute",
+  "app_features_tab",
   "section_features",
   "enable_attendance",
   "enable_leave",
@@ -30,26 +46,7 @@
   "enable_approvals",
   "enable_checkin",
   "enable_offline_sync",
-  "enable_announcements",
-  "section_auth",
-  "enable_qr_login",
-  "qr_token_expiry_minutes",
-  "jwt_secret",
-  "col_auth",
-  "jwt_expiry_hours",
-  "refresh_token_expiry_days",
-  "max_devices_per_user",
-  "section_fcm",
-  "enable_push_notifications",
-  "fcm_server_key",
-  "col_fcm",
-  "fcm_project_id",
-  "fcm_service_account_json",
-  "section_rate",
-  "enable_rate_limiting",
-  "rate_limit_per_minute",
-  "col_rate",
-  "rate_limit_auth_per_minute"
+  "enable_announcements"
  ],
  "fields": [
   {
@@ -63,13 +60,8 @@
   {
    "fieldname": "company_override",
    "fieldtype": "Link",
-   "label": "Company Override",
+   "label": "Company Name",
    "options": "Company"
-  },
-  {
-   "fieldname": "section_branding",
-   "fieldtype": "Section Break",
-   "label": "Branding"
   },
   {
    "fieldname": "primary_color",
@@ -77,52 +69,9 @@
    "label": "Primary Color"
   },
   {
-   "fieldname": "secondary_color",
-   "fieldtype": "Color",
-   "label": "Secondary Color"
-  },
-  {
-   "fieldname": "col_branding",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "logo_light",
    "fieldtype": "Attach Image",
-   "label": "Logo (Light Theme)"
-  },
-  {
-   "fieldname": "logo_dark",
-   "fieldtype": "Attach Image",
-   "label": "Logo (Dark Theme)"
-  },
-  {
-   "fieldname": "splash_image",
-   "fieldtype": "Attach Image",
-   "label": "Splash Screen Image"
-  },
-  {
-   "fieldname": "section_version",
-   "fieldtype": "Section Break",
-   "label": "Version Management"
-  },
-  {
-   "fieldname": "app_version",
-   "fieldtype": "Data",
-   "label": "Current App Version"
-  },
-  {
-   "fieldname": "min_supported_version",
-   "fieldtype": "Data",
-   "label": "Minimum Supported Version"
-  },
-  {
-   "fieldname": "force_update_below",
-   "fieldtype": "Data",
-   "label": "Force Update Below Version"
-  },
-  {
-   "fieldname": "col_version",
-   "fieldtype": "Column Break"
+   "label": "Logo"
   },
   {
    "fieldname": "app_store_url_android",
@@ -261,11 +210,6 @@
    "label": "FCM Project ID"
   },
   {
-   "fieldname": "fcm_service_account_json",
-   "fieldtype": "Long Text",
-   "label": "FCM Service Account JSON"
-  },
-  {
    "fieldname": "section_rate",
    "fieldtype": "Section Break",
    "label": "Rate Limiting"
@@ -291,11 +235,49 @@
    "fieldname": "rate_limit_auth_per_minute",
    "fieldtype": "Int",
    "label": "Requests Per Minute (Auth)"
+  },
+  {
+   "fieldname": "qr_code",
+   "fieldtype": "HTML",
+   "label": "QR Code"
+  },
+  {
+   "fieldname": "re_generate",
+   "fieldtype": "Button",
+   "label": "Re-Generate"
+  },
+  {
+   "fieldname": "column_break_zvyg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_shui",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ipwq",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "App URLs"
+  },
+  {
+   "fieldname": "column_break_veic",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rate_limit_and_authentication_tab",
+   "fieldtype": "Tab Break",
+   "label": "Rate Limit and Authentication"
+  },
+  {
+   "fieldname": "app_features_tab",
+   "fieldtype": "Tab Break",
+   "label": "App Features"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-03 00:00:00.000000",
+ "modified": "2026-08-06 13:01:54.681349",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "HRMS Mobile Settings",
@@ -312,7 +294,8 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "track_changes": 1
+ "states": []
 }

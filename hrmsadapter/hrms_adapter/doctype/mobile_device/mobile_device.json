@@ -1,16 +1,16 @@
 {
  "actions": [],
  "autoname": "naming_series:",
- "creation": "2026-08-03 00:00:00.000000",
+ "creation": "2026-08-03 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "naming_series",
-  "user",
   "employee",
+  "user",
   "col_top",
   "status",
-  "is_current",
+  "status_reason",
   "section_device",
   "device_id",
   "device_name",
@@ -46,7 +46,8 @@
    "in_list_view": 1,
    "label": "User",
    "options": "User",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "employee",
@@ -65,13 +66,15 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Active\nRevoked\nExpired"
+   "options": "Active\nRevoked\nExpired\nBlocked",
+   "search_index": 1
   },
   {
-   "default": "0",
-   "fieldname": "is_current",
-   "fieldtype": "Check",
-   "label": "Is Current Session Device"
+   "fieldname": "status_reason",
+   "fieldtype": "Select",
+   "label": "Status Reason",
+   "options": "\nLogout\nDevice Limit\nInactivity\nAdmin Block\nUser Disabled\nReassigned",
+   "read_only": 1
   },
   {
    "fieldname": "section_device",
@@ -128,9 +131,12 @@
    "label": "Authentication"
   },
   {
+   "description": "SHA-256 of the refresh token. Deliberately not a Password field — see patches/v1_0/harden_mobile_devices.py",
    "fieldname": "refresh_token_hash",
-   "fieldtype": "Password",
-   "label": "Refresh Token Hash"
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Refresh Token Hash",
+   "read_only": 1
   },
   {
    "fieldname": "refresh_token_expiry",
@@ -185,7 +191,7 @@
   }
  ],
  "links": [],
- "modified": "2026-08-03 00:00:00.000000",
+ "modified": "2026-08-06 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "Mobile Device",
@@ -197,18 +203,21 @@
    "email": 1,
    "print": 1,
    "read": 1,
+   "report": 1,
    "role": "System Manager",
    "share": 1,
    "write": 1
   },
   {
+   "export": 1,
    "read": 1,
-   "role": "Employee",
-   "write": 1
+   "report": 1,
+   "role": "HR Manager"
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "title_field": "device_name",
- "track_changes": 0
+ "states": [],
+ "title_field": "device_name"
 }

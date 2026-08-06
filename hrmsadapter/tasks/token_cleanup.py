@@ -1,5 +1,5 @@
 """
-Scheduled cleanup tasks for tokens, devices, and API logs.
+Scheduled cleanup tasks for tokens and devices.
 """
 import frappe
 from frappe.utils import add_to_date, now_datetime
@@ -24,27 +24,35 @@ def cleanup_blacklisted_tokens():
 	pass
 
 
-def purge_old_api_logs():
-	"""Delete Mobile API Log records older than retention period (default 30 days)."""
-	if not frappe.db.table_exists("tabMobile API Log"):
-		return
-
-	retention_days = 30
-	cutoff = add_to_date(now_datetime(), days=-retention_days)
-	frappe.db.delete("Mobile API Log", {"creation": ("<", cutoff)})
-	frappe.db.commit()
-
-
 def expire_inactive_devices():
-	"""Mark Mobile Devices with no activity in 90 days as Expired."""
+	"""Mark Mobile Devices with no activity in 90 days as Expired.
+
+	Falls back through last_login/modified/creation because last_active is only
+	written by the activity touch, register and refresh. The old
+	`OR last_active IS NULL` clause expired every freshly-logged-in device on the
+	next nightly run, which wiped its FCM token and silently killed the user's push
+	notifications and refresh flow.
+
+	Goes through deactivate_device rather than a bulk UPDATE so the credentials are
+	cleared and the request-time state cache is invalidated.
+	"""
+	from hrmsadapter.services import auth_service
+
 	cutoff = add_to_date(now_datetime(), days=-90)
-	frappe.db.sql(
+	rows = frappe.db.sql(
 		"""
-		UPDATE `tabMobile Device`
-		SET status = 'Expired'
+		SELECT name FROM `tabMobile Device`
 		WHERE status = 'Active'
-		  AND (last_active < %s OR last_active IS NULL)
+		  AND COALESCE(last_active, last_login, modified, creation) < %s
 		""",
 		(cutoff,),
+		as_dict=True,
 	)
+
+	for row in rows:
+		try:
+			auth_service.deactivate_device(row.name, "Expired", "Inactivity")
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "hrmsadapter: expire_inactive_devices")
+
 	frappe.db.commit()
