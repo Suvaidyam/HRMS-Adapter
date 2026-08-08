@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import json;json.load\\(open\\('hrmsadapter/hrms_adapter/doctype/hrms_mobile_settings/hrms_mobile_settings.json'\\)\\);print\\('json ok'\\)\")",
+      "Bash(python3 -m compileall -q hrmsadapter/services/auth_service.py hrmsadapter/install.py hrmsadapter/patches/v1_0/drop_jwt_secret.py hrmsadapter/hrms_adapter/doctype/hrms_mobile_settings/hrms_mobile_settings.py hrmsadapter/tests/test_settings.py)",
+      "Bash(timeout 550 bench --site adapter.localhost migrate)",
+      "Bash(grep -v \"^In \\\\[\\\\|^Out\\\\[\\\\|Apps in this namespace\\\\|^$\")",
+      "Bash(curl -s -i -X OPTIONS 'http://adapter.localhost:8002/api/method/hrmsadapter.api.v1.auth.login' -H 'Origin: http://localhost:46685' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type')",
+      "Bash(curl -s -i -X POST 'http://adapter.localhost:8002/api/method/hrmsadapter.api.v1.auth.login' -H 'Content-Type: application/json' -H 'Origin: http://localhost:46685' -d '{\"usr\":\"nosuchuser@example.com\",\"pwd\":\"wrongpass\",\"device_id\":\"curl-probe-1\"}')",
+      "Bash(curl -s -m 30 -w \"\\\\nHTTP %{http_code}\\\\n\" -X POST 'http://adapter.localhost:8002/api/method/hrmsadapter.api.v1.auth.login' -H 'Content-Type: application/json' -d '{\"usr\":\"nosuchuser@example.com\",\"pwd\":\"wrongpass\",\"device_id\":\"curl-probe-1\"}')",
+      "Bash(curl -s -m 30 -w \"\\\\nHTTP %{http_code}\\\\n\" -X POST 'http://adapter.localhost:8002/api/method/hrmsadapter.api.v1.auth.login' -H 'Content-Type: application/json' -d '{\"usr\":\"Administrator\",\"pwd\":\"admin\",\"device_id\":\"curl-probe-1\",\"platform\":\"Android\",\"device_name\":\"probe\"}')",
+      "Bash(git --no-pager diff hrmsadapter/services/auth_service.py)"
+    ],
+    "additionalDirectories": [
+      "/home/kk/Desktop/frappe_docker/development/erp-bench/sites/adapter.localhost"
+    ]
+  }
+}
