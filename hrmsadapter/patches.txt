@@ -7,3 +7,4 @@
 hrmsadapter.patches.v1_0.create_default_settings
 hrmsadapter.patches.v1_0.harden_mobile_devices
 hrmsadapter.patches.v1_0.drop_mobile_api_log
+hrmsadapter.patches.v1_0.drop_jwt_secret

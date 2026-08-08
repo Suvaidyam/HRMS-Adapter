@@ -40,8 +40,8 @@ def validate_mobile_jwt_if_present():
 	except frappe.AuthenticationError:
 		raise
 	except Exception:
-		# Was a silent `pass`, which turned a misconfiguration (rotated jwt_secret,
-		# missing settings) into an opaque 401 with nothing in the Error Log.
+		# Was a silent `pass`, which turned a misconfiguration (rotated site
+		# encryption_key, missing settings) into an opaque 401 with nothing in the Error Log.
 		frappe.log_error(frappe.get_traceback(), "hrmsadapter: mobile JWT auth failure")
 		frappe.throw("Could not validate the session token.", frappe.AuthenticationError)
 

@@ -17,11 +17,19 @@ class TestMobileSettings(FrappeTestCase):
 		doc = frappe.get_doc("HRMS Mobile Settings")
 		self.assertIsNotNone(doc)
 
-	def test_jwt_secret_auto_generated(self):
+	def test_no_jwt_secret_stored(self):
+		"""The signing key is derived from the site, never persisted here."""
 		doc = frappe.get_doc("HRMS Mobile Settings")
-		secret = doc.get_password("jwt_secret")
-		self.assertIsNotNone(secret)
-		self.assertGreater(len(secret), 32)
+		self.assertIsNone(doc.meta.get_field("jwt_secret"))
+
+		Auth = frappe.qb.Table("__Auth")
+		rows = (
+			frappe.qb.from_(Auth)
+			.select(Auth.name)
+			.where((Auth.doctype == "HRMS Mobile Settings") & (Auth.fieldname == "jwt_secret"))
+			.run()
+		)
+		self.assertFalse(rows)
 
 	def test_defaults_are_set(self):
 		doc = frappe.get_doc("HRMS Mobile Settings")

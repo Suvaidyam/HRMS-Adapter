@@ -42,13 +42,30 @@ def _get_settings():
 	return frappe.get_cached_doc("HRMS Mobile Settings")
 
 
+def _get_jwt_secret() -> str:
+	"""The HS256 signing key, derived from the site's own encryption key.
+
+	Deliberately not stored in a DocType. The old `jwt_secret` Password field lived in
+	`__Auth`, so a settings row inserted without it — or restored onto a site with a
+	different encryption_key — made get_password() raise and every login/token check
+	500'd. Derived per site, it is stable across restarts and needs no seeding.
+
+	Hashed rather than used raw so the signing key is not the site encryption key
+	itself. Note: changing site_config's encryption_key invalidates all live tokens.
+	"""
+	from frappe.utils.password import get_encryption_key
+
+	site = getattr(frappe.local, "site", "") or ""
+	return hashlib.sha256(f"hrmsadapter-jwt:{site}:{get_encryption_key()}".encode()).hexdigest()
+
+
 # ---------------------------------------------------------------------------
 # Access token
 # ---------------------------------------------------------------------------
 
 def generate_access_token(user: str, device_id: str) -> str:
 	settings = _get_settings()
-	secret = settings.get_password("jwt_secret")
+	secret = _get_jwt_secret()
 	now = datetime.now(timezone.utc)
 	expiry_hours = settings.jwt_expiry_hours or 24
 
@@ -63,8 +80,7 @@ def generate_access_token(user: str, device_id: str) -> str:
 
 
 def validate_token(token: str) -> dict:
-	settings = _get_settings()
-	secret = settings.get_password("jwt_secret")
+	secret = _get_jwt_secret()
 
 	try:
 		claims = jwt.decode(token, secret, algorithms=["HS256"])

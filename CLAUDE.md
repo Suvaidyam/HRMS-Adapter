@@ -81,8 +81,11 @@ Read config with the cached singleton, never by hardcoding:
 
 ```python
 settings = frappe.get_cached_doc("HRMS Mobile Settings")
-secret = settings.get_password("jwt_secret")   # secrets via get_password, never settings.jwt_secret
+key = settings.get_password("fcm_server_key")   # secrets via get_password, never settings.fcm_server_key
 ```
+
+There is **no `jwt_secret` setting**. The JWT signing key is derived per site from the
+site's `encryption_key` by `auth_service._get_jwt_secret()` — never stored, never seeded.
 
 ### 3.5 Validation & employee resolution
 Use `hrmsadapter.utils.validators`:
@@ -153,7 +156,8 @@ These areas break the mobile app or security if changed carelessly. Change only 
 | **`hooks.py` `before_request`** | Auth (`validate_mobile_jwt_if_present`) runs for *every* request. A bug here breaks or unsecures the whole API. |
 | **`hooks.py` `doc_events`** | Each entry ties an HR doctype event to a notification. Removing one silently kills notifications. |
 | **`services/auth_service.py`** | JWT signing/validation, refresh rotation, blacklist, QR lifecycle, device-limit enforcement. Security-critical. |
-| **Secrets** (`jwt_secret`, `fcm_server_key`, `fcm_service_account_json`) | Read via `get_password(...)`. Never log, print, return in a response, or commit. Rotating `jwt_secret` invalidates all live tokens. |
+| **Secrets** (`fcm_server_key`, `fcm_service_account_json`) | Read via `get_password(...)`. Never log, print, return in a response, or commit. |
+| **`auth_service._get_jwt_secret()`** | Derived from the site `encryption_key`. Never store it in a DocType; changing the site's `encryption_key` invalidates all live tokens. |
 | **`hrms_adapter` folder name & `modules.txt`** | Renaming breaks Frappe module resolution and existing data. |
 | **`required_apps`, existing DocType field names** | Renaming a field is a breaking migration for stored data and the mobile app. |
 | **`scheduler_events`** | Notification delivery and token/log cleanup depend on these firing. |

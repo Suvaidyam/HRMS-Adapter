@@ -33,7 +33,6 @@ def _create_mobile_settings():
 	settings.enable_rate_limiting = 1
 	settings.rate_limit_per_minute = 60
 	settings.rate_limit_auth_per_minute = 10
-	settings.jwt_secret = frappe.generate_hash(length=64)
 	settings.insert(ignore_permissions=True)
 	frappe.db.commit()
 
