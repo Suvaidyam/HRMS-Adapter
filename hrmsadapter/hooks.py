@@ -79,3 +79,17 @@ before_request = ["hrmsadapter.decorators.auth.validate_mobile_jwt_if_present"]
 default_log_clearing_doctypes = {
 	"QR Login Token": 1,
 }
+
+
+# -------------------------------------------------------------------------
+# Export Fixtures  [Phase 10]
+# -------------------------------------------------------------------------
+
+fixtures = [
+	{
+    "dt": "Custom DocPerm",
+    "filters": {
+      "parent": "HRMS Mobile Settings",
+		}
+	}
+]
