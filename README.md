@@ -88,7 +88,7 @@ bench --site your-site.localhost install-app hrmsadapter
 
 **What installation does automatically** (see `hrmsadapter/install.py` → `after_install`):
 
-1. Creates the **HRMS Mobile Settings** singleton with safe defaults and a freshly generated 64-char `jwt_secret`.
+1. Creates the **HRMS Mobile Settings** singleton with safe defaults. No JWT secret is generated or stored — the signing key is derived from the site's `encryption_key`.
 2. Seeds **Mobile Field Mapping** rows for common HR fields (e.g. `Leave Application.employee → employee_id`).
 
 Verify it worked:
@@ -110,11 +110,11 @@ Almost everything is configured from a **single singleton DocType**: open **HRMS
 | **Branding**      | `app_name`, `primary_color`, `logo_light`, `company_override`                                             | Remote theming served to the app via `settings.get_branding`  |
 | **Store links**   | `app_store_url_android`, `app_store_url_ios`                                                              | Store URLs returned in `get_branding.store_urls`              |
 | **Feature flags** | `enable_attendance`, `enable_leave`, `enable_expense`, `enable_payroll`, `enable_approvals`, `enable_checkin`, `enable_offline_sync`, `enable_announcements`, `enable_qr_login` | Turn features on/off remotely (`settings.get_feature_flags`)  |
-| **Auth / JWT**    | `jwt_secret` 🔒, `jwt_expiry_hours` (24), `refresh_token_expiry_days` (30), `max_devices_per_user` (5), `qr_token_expiry_minutes` (5) | Token lifetimes and device limits                             |
+| **Auth / JWT**    | `jwt_expiry_hours` (24), `refresh_token_expiry_days` (30), `max_devices_per_user` (5), `qr_token_expiry_minutes` (5) | Token lifetimes and device limits (the signing key is derived, not configured) |
 | **Push (FCM)**    | `enable_push_notifications`, `fcm_server_key` 🔒, `fcm_project_id`, `fcm_service_account_json`            | Firebase Cloud Messaging credentials                          |
 | **Rate limiting** | `enable_rate_limiting`, `rate_limit_per_minute` (60), `rate_limit_auth_per_minute` (10)                   | Abuse protection                                              |
 
-> 🔒 **Never commit or log** `jwt_secret`, `fcm_server_key`, or `fcm_service_account_json`. They are stored as encrypted `Password`/`Long Text` fields — read them with `settings.get_password("jwt_secret")`, not by printing the doc.
+> 🔒 **Never commit or log** `fcm_server_key` or `fcm_service_account_json`. They are stored as encrypted `Password`/`Long Text` fields — read them with `settings.get_password("fcm_server_key")`, not by printing the doc.
 
 ### Enabling push notifications
 
@@ -321,7 +321,7 @@ bench --site your-site.localhost run-tests --app hrmsadapter
 | Push notifications never arrive                            | Check `enable_push_notifications`, FCM credentials, and that the **scheduler/worker is running** (queue drainer is a job).    |
 | Notifications stuck in `Pending`                            | The `all` scheduler event isn't firing → run `bench start` / verify `bench doctor`; queue is drained by `process_notification_queue`. |
 | Changed a DocType JSON but the field isn't there           | Run `bench --site <site> migrate` and `clear-cache`.                                                                          |
-| `jwt_secret` is empty / tokens fail after a DB copy        | Re-generate: set a new 64-char secret on **HRMS Mobile Settings** (this invalidates existing tokens).                         |
+| Tokens fail after restoring a DB onto another site         | The signing key follows the site's `encryption_key` — copy the original `site_config.json` key, or have clients log in again. |
 | Too many devices / can't log in on a new phone            | `max_devices_per_user` (default 5) reached — the oldest device is auto-expired on next login, or revoke one manually.        |
 
 ---

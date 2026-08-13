@@ -7,19 +7,24 @@
  "field_order": [
   "naming_series",
   "employee",
-  "user",
   "col_top",
   "status",
   "status_reason",
+  "user",
   "section_device",
   "device_id",
-  "device_name",
-  "platform",
-  "os_version",
-  "app_version",
-  "col_device",
   "device_model",
+  "app_version",
+  "platform",
+  "col_device",
+  "device_name",
   "device_brand",
+  "os_version",
+  "section_meta",
+  "registered_ip",
+  "last_ip",
+  "total_logins",
+  "notification_and_authentatication_tab",
   "section_tokens",
   "refresh_token_hash",
   "refresh_token_expiry",
@@ -27,11 +32,7 @@
   "last_active",
   "section_fcm",
   "fcm_token",
-  "fcm_token_updated",
-  "section_meta",
-  "registered_ip",
-  "last_ip",
-  "total_logins"
+  "fcm_token_updated"
  ],
  "fields": [
   {
@@ -131,7 +132,7 @@
    "label": "Authentication"
   },
   {
-   "description": "SHA-256 of the refresh token. Deliberately not a Password field — see patches/v1_0/harden_mobile_devices.py",
+   "description": "SHA-256 of the refresh token. Deliberately not a Password field \u2014 see patches/v1_0/harden_mobile_devices.py",
    "fieldname": "refresh_token_hash",
    "fieldtype": "Data",
    "hidden": 1,
@@ -188,13 +189,19 @@
    "fieldname": "total_logins",
    "fieldtype": "Int",
    "label": "Total Logins"
+  },
+  {
+   "fieldname": "notification_and_authentatication_tab",
+   "fieldtype": "Tab Break",
+   "label": "Notification and Authentatication"
   }
  ],
  "links": [],
- "modified": "2026-08-06 12:00:00.000000",
+ "modified": "2026-08-08 07:18:49.697578",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "Mobile Device",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
   {

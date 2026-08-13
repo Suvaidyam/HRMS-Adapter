@@ -26,7 +26,6 @@
   "section_auth",
   "enable_qr_login",
   "qr_token_expiry_minutes",
-  "jwt_secret",
   "col_auth",
   "jwt_expiry_hours",
   "refresh_token_expiry_days",
@@ -158,11 +157,6 @@
    "label": "QR Token Expiry (minutes)"
   },
   {
-   "fieldname": "jwt_secret",
-   "fieldtype": "Password",
-   "label": "JWT Secret Key"
-  },
-  {
    "fieldname": "col_auth",
    "fieldtype": "Column Break"
   },
@@ -277,7 +271,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-06 13:01:54.681349",
+ "modified": "2026-08-08 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "HRMS Mobile Settings",
