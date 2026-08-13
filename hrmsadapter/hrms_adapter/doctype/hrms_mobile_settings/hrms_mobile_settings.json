@@ -37,15 +37,18 @@
   "rate_limit_auth_per_minute",
   "app_features_tab",
   "section_features",
-  "enable_attendance",
-  "enable_leave",
-  "enable_expense",
-  "enable_payroll",
-  "col_features",
-  "enable_approvals",
   "enable_checkin",
+  "enable_worklog",
+  "enable_approvals",
+  "enable_travel",
+  "col_features",
   "enable_offline_sync",
-  "enable_announcements"
+  "enable_expense",
+  "enable_announcements",
+  "column_break_jfxz",
+  "enable_leave",
+  "enable_payroll",
+  "enable_attendance"
  ],
  "fields": [
   {
@@ -138,6 +141,18 @@
    "fieldname": "enable_announcements",
    "fieldtype": "Check",
    "label": "Enable Announcements"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_worklog",
+   "fieldtype": "Check",
+   "label": "Enable Daily Worklog"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_travel",
+   "fieldtype": "Check",
+   "label": "Enable Travel Requests"
   },
   {
    "fieldname": "section_auth",
@@ -267,11 +282,15 @@
    "fieldname": "app_features_tab",
    "fieldtype": "Tab Break",
    "label": "App Features"
+  },
+  {
+   "fieldname": "column_break_jfxz",
+   "fieldtype": "Column Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-08 00:00:00.000000",
+ "modified": "2026-08-13 17:01:35.311269",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "HRMS Mobile Settings",

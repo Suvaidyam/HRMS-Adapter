@@ -100,7 +100,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Platform",
-   "options": "Android\niOS\nWeb"
+   "options": "Android\niOS\nWeb\nLinux\nmacOS\nWindows"
   },
   {
    "fieldname": "os_version",
@@ -197,7 +197,7 @@
   }
  ],
  "links": [],
- "modified": "2026-08-08 07:18:49.697578",
+ "modified": "2026-08-13 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "Mobile Device",

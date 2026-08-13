@@ -8,7 +8,6 @@ def after_install():
 
 def before_uninstall():
 	frappe.db.delete("Mobile Device")
-	frappe.db.delete("QR Login Token")
 	frappe.db.delete("Mobile Notification")
 	frappe.db.delete("Mobile Field Mapping")
 
@@ -29,6 +28,8 @@ def _create_mobile_settings():
 	settings.enable_payroll = 1
 	settings.enable_approvals = 1
 	settings.enable_announcements = 1
+	settings.enable_worklog = 1
+	settings.enable_travel = 1
 	settings.enable_qr_login = 1
 	settings.enable_rate_limiting = 1
 	settings.rate_limit_per_minute = 60

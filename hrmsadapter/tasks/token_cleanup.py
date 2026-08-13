@@ -5,20 +5,6 @@ import frappe
 from frappe.utils import add_to_date, now_datetime
 
 
-def expire_qr_tokens():
-	"""Mark all QR Login Tokens past their expiry as Expired."""
-	frappe.db.sql(
-		"""
-		UPDATE `tabQR Login Token`
-		SET status = 'Expired'
-		WHERE status IN ('Pending', 'Scanned')
-		  AND expiry < %s
-		""",
-		(now_datetime(),),
-	)
-	frappe.db.commit()
-
-
 def cleanup_blacklisted_tokens():
 	"""Redis TTL handles JWT blacklist expiry automatically; this is a no-op placeholder."""
 	pass
