@@ -57,11 +57,12 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "App Name",
-   "reqd": 1
+   "mandatory_depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")"
   },
   {
    "fieldname": "company_override",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Company Name",
    "options": "Company"
   },
@@ -194,6 +195,7 @@
    "label": "Max Devices Per User"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "section_fcm",
    "fieldtype": "Section Break",
    "label": "Push Notifications (FCM)"
@@ -256,14 +258,17 @@
    "label": "Re-Generate"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "column_break_zvyg",
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "column_break_shui",
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "section_break_ipwq",
    "fieldtype": "Section Break",
    "hidden": 1,
@@ -274,11 +279,13 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "rate_limit_and_authentication_tab",
    "fieldtype": "Tab Break",
    "label": "Rate Limit and Authentication"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "app_features_tab",
    "fieldtype": "Tab Break",
    "label": "App Features"
@@ -290,7 +297,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-13 17:01:35.311269",
+ "modified": "2026-08-14 12:04:08.319334",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "HRMS Mobile Settings",
