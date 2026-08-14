@@ -49,26 +49,6 @@ class TestAuthService(FrappeTestCase):
 		self.assertEqual(len(raw), 48)
 		self.assertEqual(len(hashed), 64)
 
-	def test_qr_token_lifecycle(self):
-		result = auth_service.create_qr_token("127.0.0.1")
-		token = result["qr_token"]
-		self.assertIsNotNone(token)
-
-		status = auth_service.poll_qr_status(token)
-		self.assertEqual(status["status"], "Pending")
-
-		auth_service.scan_qr_token(token, "Administrator", "test-device-qr")
-		status = auth_service.poll_qr_status(token)
-		self.assertEqual(status["status"], "Scanned")
-
-		frappe.set_user("Administrator")
-		access_token = auth_service.consume_qr_token(token)
-		self.assertIsNotNone(access_token)
-
-		status = auth_service.poll_qr_status(token)
-		self.assertEqual(status["status"], "Consumed")
-
 	def tearDown(self):
-		frappe.db.delete("QR Login Token", {"generated_from_ip": "127.0.0.1"})
 		frappe.db.delete("Mobile Device", {"device_id": ("like", "test-device-%")})
 		frappe.db.commit()

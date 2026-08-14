@@ -184,44 +184,14 @@ def logout(device_id=None):
 
 
 # ---------------------------------------------------------------------------
-# QR Login  (Phase 3 — implemented inline here for convenience)
+# QR Login
+#
+# The QR is minted by `QR_code_generator.generate_qr_code`, which parks the
+# claim in Redis under `hrms_mobile_token:{token}`. `validate_qr_token` below is
+# the only consumer. The older DocType-backed desktop-login handshake
+# (generate/scan/consume/poll against `QR Login Token`) has been removed — it
+# had no client on either end.
 # ---------------------------------------------------------------------------
-
-@frappe.whitelist(allow_guest=True, methods=["GET"])
-def generate_qr_token():
-	"""Desktop browser calls this to obtain a QR token to display."""
-	ip = frappe.local.request_ip
-	result = auth_service.create_qr_token(ip)
-	return success(data=result)
-
-
-@frappe.whitelist(methods=["POST"])
-def scan_qr_token(qr_token, device_id):
-	"""Mobile app (authenticated) scans and claims the QR token."""
-	from hrmsadapter.decorators.auth import require_mobile_auth  # noqa: F401
-	user = frappe.session.user
-	if user == "Guest":
-		return error("Authentication required.", http_status_code=401)
-	auth_service.scan_qr_token(qr_token, user, device_id)
-	return success(data={"status": "Scanned"})
-
-
-@frappe.whitelist(allow_guest=True, methods=["GET"])
-def poll_qr_status(qr_token):
-	"""Desktop browser polls this until status is Consumed."""
-	result = auth_service.poll_qr_status(qr_token)
-	return success(data=result)
-
-
-@frappe.whitelist(methods=["POST"])
-def consume_qr_token(qr_token):
-	"""Mobile app approves the login — generates JWT for desktop session."""
-	user = frappe.session.user
-	if user == "Guest":
-		return error("Authentication required.", http_status_code=401)
-	access_token = auth_service.consume_qr_token(qr_token)
-	return success(data={"access_token": access_token, "status": "Consumed"})
-
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def validate_qr_token(token, device_id, platform=None, device_name=None,

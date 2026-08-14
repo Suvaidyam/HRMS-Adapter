@@ -6,7 +6,7 @@ HRMS Adapter (`hrmsadapter`) is a [Frappe](https://frappeframework.com/) app tha
 
 It provides:
 
-- 🔐 **JWT authentication** for mobile (access + refresh tokens), plus **QR-based desktop login**
+- 🔐 **JWT authentication** for mobile (access + refresh tokens), plus **QR sign-in** from the desk
 - 📱 **Device management** (register / revoke, max-devices-per-user, FCM tokens)
 - 🔔 **Push notifications** (FCM) triggered automatically by HR document events (leave approved, expense submitted, etc.)
 - 📊 **Feature-scoped REST endpoints** for attendance, leave, expense, payroll, approvals, dashboard, profile
@@ -109,7 +109,7 @@ Almost everything is configured from a **single singleton DocType**: open **HRMS
 | ----------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | **Branding**      | `app_name`, `primary_color`, `logo_light`, `company_override`                                             | Remote theming served to the app via `settings.get_branding`  |
 | **Store links**   | `app_store_url_android`, `app_store_url_ios`                                                              | Store URLs returned in `get_branding.store_urls`              |
-| **Feature flags** | `enable_attendance`, `enable_leave`, `enable_expense`, `enable_payroll`, `enable_approvals`, `enable_checkin`, `enable_offline_sync`, `enable_announcements`, `enable_qr_login` | Turn features on/off remotely (`settings.get_feature_flags`)  |
+| **Feature flags** | `enable_attendance`, `enable_leave`, `enable_expense`, `enable_payroll`, `enable_approvals`, `enable_checkin`, `enable_offline_sync`, `enable_announcements`, `enable_worklog`, `enable_travel`, `enable_qr_login` | Turn features on/off remotely (`settings.get_feature_flags`). The mobile app hides the entry point *and* blocks the route for anything switched off. `enable_qr_login` is additionally served by the guest `settings.get_branding`, because the QR button is on the login screen and there is no JWT yet |
 | **Auth / JWT**    | `jwt_expiry_hours` (24), `refresh_token_expiry_days` (30), `max_devices_per_user` (5), `qr_token_expiry_minutes` (5) | Token lifetimes and device limits (the signing key is derived, not configured) |
 | **Push (FCM)**    | `enable_push_notifications`, `fcm_server_key` 🔒, `fcm_project_id`, `fcm_service_account_json`            | Firebase Cloud Messaging credentials                          |
 | **Rate limiting** | `enable_rate_limiting`, `rate_limit_per_minute` (60), `rate_limit_auth_per_minute` (10)                   | Abuse protection                                              |
@@ -135,7 +135,7 @@ hrmsadapter/
 │
 ├── api/                         # ── PRESENTATION LAYER ──────────────────────────
 │   └── v1/                      #    Versioned, whitelisted HTTP endpoints (thin!)
-│       ├── auth.py              #    login, refresh_token, logout, QR login flow
+│       ├── auth.py              #    login, refresh_token, logout, validate_qr_token
 │       ├── device.py            #    register / update_app_version / revoke
 │       ├── profile.py           #    profile, permissions, profile image
 │       ├── attendance.py        #    calendar, checkin, attendance requests, shifts
@@ -150,7 +150,7 @@ hrmsadapter/
 │       └── sync.py              #    full / incremental / upload_pending
 │
 ├── services/                    # ── BUSINESS LOGIC LAYER ────────────────────────
-│   ├── auth_service.py          #    JWT & refresh tokens, QR lifecycle, device upsert
+│   ├── auth_service.py          #    JWT & refresh tokens, device upsert
 │   ├── notification_service.py  #    FCM sending + all on_<doc>_<event> handlers + queue
 │   ├── metadata_service.py      #    Dynamic mobile form fields (uses Mobile Field Mapping)
 │   ├── permission_service.py    #    Module access, approval permission checks
@@ -165,12 +165,11 @@ hrmsadapter/
 │
 ├── tasks/                       # ── SCHEDULED JOBS ─────────────────────────────
 │   ├── notification_queue.py    #    process_notification_queue (every "all" tick)
-│   └── token_cleanup.py         #    expire QR tokens, expire inactive devices
+│   └── token_cleanup.py         #    expire inactive devices
 │
 ├── hrms_adapter/doctype/        # ── DATA MODEL (note: folder is hrms_adapter) ───
 │   ├── hrms_mobile_settings/    #    Singleton config (see above)
 │   ├── mobile_device/           #    One row per logged-in device
-│   ├── qr_login_token/          #    Short-lived desktop-login tokens
 │   ├── mobile_notification/     #    Outgoing/in-app notification records + retry state
 │   └── mobile_field_mapping/    #    Maps internal fieldname → mobile_key alias
 │
@@ -204,7 +203,8 @@ On error, `success` is `false`, `data` is `{}`, and `error` is `{ "message": "..
 
 | Module     | Endpoints                                                                        |
 | ---------- | -------------------------------------------------------------------------------- |
-| `auth`     | login, refresh_token, logout, generate_qr_token, scan_qr_token, poll_qr_status, consume_qr_token |
+| `auth`     | login, refresh_token, logout, validate_qr_token *(guest)*                        |
+| `QR_code_generator` | generate_qr_code *(desk-side; renders the login QR)*                    |
 | `device`   | register, update_app_version, revoke                                             |
 | `profile`  | get_my_profile, update_profile_image, get_permissions                            |
 | `attendance` | get_calendar, checkin, get_attendance_requests, create_attendance_request, get_shifts |
@@ -218,7 +218,7 @@ On error, `success` is `false`, `data` is `{}`, and `error` is `{ "message": "..
 | `settings` | get_branding *(guest)*, get_feature_flags, get_app_config                        |
 | `sync`     | full_sync, incremental_sync, upload_pending                                      |
 
-*Guest-accessible endpoints (no token needed):* `auth.login`, `auth.refresh_token`, `auth.generate_qr_token`, `auth.poll_qr_status`, `settings.get_branding`.
+*Guest-accessible endpoints (no token needed):* `auth.login`, `auth.refresh_token`, `auth.validate_qr_token`, `settings.get_branding`.
 
 ---
 
@@ -265,11 +265,22 @@ curl -X POST '.../hrmsadapter.api.v1.auth.refresh_token' \
   -d '{ "refresh_token": "…", "device_id": "device-uuid-1234" }'
 ```
 
-### 4. QR desktop login (high level)
+### 4. QR login (high level)
 
-1. Desktop browser → `auth.generate_qr_token` → renders the returned `qr_token` as a QR code.
-2. Mobile app (authenticated) → `auth.scan_qr_token` → `auth.consume_qr_token`.
-3. Desktop polls `auth.poll_qr_status` until `status = "Consumed"`, then uses the returned `access_token`.
+1. Desk user opens **HRMS Mobile Settings**, whose client script calls
+   `QR_code_generator.generate_qr_code`. That mints a token, parks
+   `{user, company, name}` in Redis under `hrms_mobile_token:{token}` for
+   `qr_token_expiry_minutes`, and returns a base64 PNG of
+   `{"server_url": …, "token": …}`.
+2. The mobile app scans it and posts the token to `auth.validate_qr_token`
+   (guest) together with its `device_id` and device metadata.
+3. The endpoint redeems the Redis key — deleting it immediately, so a token is
+   single-use — upserts the Mobile Device row and returns the usual
+   access/refresh token pair.
+
+> The QR carries the session of **whoever generated it**, so the phone signs in
+> as that desk user. There is no separate desktop-approval handshake; the
+> DocType-backed one was removed.
 
 ---
 

@@ -231,12 +231,6 @@ class TestMobileDevice(FrappeTestCase):
 
 	# -- request-time session validation --------------------------------------
 
-	def test_session_check_allows_desktop_qr(self):
-		"""The desktop QR session has no device row by design."""
-		auth_service.assert_device_session_valid(
-			{"sub": USER_A, "device_id": auth_service.QR_DESKTOP_DEVICE_ID}
-		)
-
 	def test_session_check_allows_unknown_device(self):
 		auth_service.invalidate_device_state_cache("test-device-nonexistent")
 		auth_service.assert_device_session_valid(
