@@ -37,15 +37,18 @@
   "rate_limit_auth_per_minute",
   "app_features_tab",
   "section_features",
-  "enable_attendance",
-  "enable_leave",
-  "enable_expense",
-  "enable_payroll",
-  "col_features",
-  "enable_approvals",
   "enable_checkin",
+  "enable_worklog",
+  "enable_approvals",
+  "enable_travel",
+  "col_features",
   "enable_offline_sync",
-  "enable_announcements"
+  "enable_expense",
+  "enable_announcements",
+  "column_break_jfxz",
+  "enable_leave",
+  "enable_payroll",
+  "enable_attendance"
  ],
  "fields": [
   {
@@ -54,11 +57,12 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "App Name",
-   "reqd": 1
+   "mandatory_depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")"
   },
   {
    "fieldname": "company_override",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Company Name",
    "options": "Company"
   },
@@ -140,6 +144,18 @@
    "label": "Enable Announcements"
   },
   {
+   "default": "1",
+   "fieldname": "enable_worklog",
+   "fieldtype": "Check",
+   "label": "Enable Daily Worklog"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_travel",
+   "fieldtype": "Check",
+   "label": "Enable Travel Requests"
+  },
+  {
    "fieldname": "section_auth",
    "fieldtype": "Section Break",
    "label": "Authentication"
@@ -179,6 +195,7 @@
    "label": "Max Devices Per User"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "section_fcm",
    "fieldtype": "Section Break",
    "label": "Push Notifications (FCM)"
@@ -241,14 +258,17 @@
    "label": "Re-Generate"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "column_break_zvyg",
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "column_break_shui",
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "section_break_ipwq",
    "fieldtype": "Section Break",
    "hidden": 1,
@@ -259,19 +279,25 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "rate_limit_and_authentication_tab",
    "fieldtype": "Tab Break",
    "label": "Rate Limit and Authentication"
   },
   {
+   "depends_on": "eval: frappe.session.user === \"Administrator\" || frappe.user.has_role(\"System Manager\")",
    "fieldname": "app_features_tab",
    "fieldtype": "Tab Break",
    "label": "App Features"
+  },
+  {
+   "fieldname": "column_break_jfxz",
+   "fieldtype": "Column Break"
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-08 00:00:00.000000",
+ "modified": "2026-08-14 12:04:08.319334",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "HRMS Mobile Settings",

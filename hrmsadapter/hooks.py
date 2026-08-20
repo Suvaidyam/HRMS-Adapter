@@ -60,7 +60,6 @@ scheduler_events = {
 		"hrmsadapter.tasks.notification_queue.process_notification_queue",
 	],
 	"hourly": [
-		"hrmsadapter.tasks.token_cleanup.expire_qr_tokens",
 		"hrmsadapter.tasks.token_cleanup.cleanup_blacklisted_tokens",
 	],
 	"daily": [
@@ -72,14 +71,6 @@ scheduler_events = {
 # Request Lifecycle  [Phase 2 / Phase 10]
 # -------------------------------------------------------------------------
 before_request = ["hrmsadapter.decorators.auth.validate_mobile_jwt_if_present"]
-
-# -------------------------------------------------------------------------
-# Log Retention  [Phase 10]
-# -------------------------------------------------------------------------
-default_log_clearing_doctypes = {
-	"QR Login Token": 1,
-}
-
 
 # -------------------------------------------------------------------------
 # Export Fixtures  [Phase 10]

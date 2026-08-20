@@ -11,7 +11,7 @@
 `hrmsadapter` (app title **"HRMS Adapter"**, publisher **Suvaidyam**) is a **mobile middleware adapter** that exposes **ERPNext + Frappe HR** to a **Flutter mobile app** through a versioned REST API. It is a thin layer:
 
 - It **does not own HR data.** Employee, Leave, Expense, Attendance, Payroll, etc. live in `erpnext`/`hrms`. This app reads/writes them through Frappe's ORM.
-- It **owns only mobile plumbing:** JWT/refresh tokens, QR desktop-login, device registry, push notifications, and field-mapping/branding config.
+- It **owns only mobile plumbing:** JWT/refresh tokens, QR login, device registry, push notifications, and field-mapping/branding config.
 - `required_apps = ["erpnext", "hrms"]` — never assume those doctypes are optional.
 
 **Request lifecycle (memorise this):**
@@ -31,7 +31,7 @@ This is a **strict layered architecture**. Respect the boundaries — do not put
 | Layer          | Location                | Responsibility                                                                 | Rule |
 | -------------- | ----------------------- | ------------------------------------------------------------------------------ | ---- |
 | **API**        | `api/v1/*.py`           | Whitelisted HTTP endpoints. Parse params, call a service, wrap in `response`.   | Keep **thin**. No JWT logic, no raw SQL, no FCM calls here. |
-| **Service**    | `services/*_service.py` | All business logic, ORM access, token/QR/notification logic.                    | Returns **plain Python** (dict/str/None), **never** a response envelope. |
+| **Service**    | `services/*_service.py` | All business logic, ORM access, token/notification logic.                       | Returns **plain Python** (dict/str/None), **never** a response envelope. |
 | **Utils**      | `utils/*.py`            | `response` (envelope), `validators` (guards).                                   | Pure helpers. No endpoint-specific logic. |
 | **Decorators** | `decorators/auth.py`    | `require_mobile_auth`, `validate_mobile_jwt_if_present`.                         | Auth only. |
 | **Doctypes**   | `hrms_adapter/doctype/` | Persistent state: settings, devices, tokens, notifications, logs, mappings.     | Controllers stay minimal. |
@@ -68,13 +68,13 @@ The envelope shape is a **public contract** the Flutter app depends on:
 
 ### 3.2 Whitelisting & HTTP methods
 - Decorate **every** endpoint with `@frappe.whitelist(methods=["GET"|"POST"|"PUT"|"DELETE"])` — always specify the method explicitly.
-- Use `allow_guest=True` **only** for the five intentionally-public endpoints: `auth.login`, `auth.refresh_token`, `auth.generate_qr_token`, `auth.poll_qr_status`, `settings.get_branding`. Never add `allow_guest=True` elsewhere without an explicit reason.
+- Use `allow_guest=True` **only** for the four intentionally-public endpoints: `auth.login`, `auth.refresh_token`, `auth.validate_qr_token`, `settings.get_branding`. Never add `allow_guest=True` elsewhere without an explicit reason.
 
 ### 3.3 Authentication
 - Auth is handled globally by `before_request` (`validate_mobile_jwt_if_present`) which sets `frappe.session.user` from a Bearer JWT.
 - Inside an authenticated endpoint, the current user is simply `frappe.session.user`; guard with `if frappe.session.user == "Guest": return error(..., 401)` where a hard check is needed.
 - JWT claims are available at `frappe.local.mobile_jwt_claims`; device id at `frappe.local.mobile_device_id`.
-- **All** token/QR/device logic lives in `services/auth_service.py`. Do not decode JWTs or hash refresh tokens anywhere else.
+- **All** token/device logic lives in `services/auth_service.py`. Do not decode JWTs or hash refresh tokens anywhere else. QR login is the exception: the token is minted in `api/v1/QR_code_generator.py` and redeemed in `api/v1/auth.validate_qr_token`, both against the Redis key `hrms_mobile_token:{token}` — there is no QR DocType.
 
 ### 3.4 Settings access
 Read config with the cached singleton, never by hardcoding:
@@ -135,6 +135,12 @@ Raise Frappe exceptions inside services (`frappe.throw(msg, frappe.Authenticatio
 1. Add an idempotent, exception-safe function in `tasks/`.
 2. Register it under the correct bucket in `hooks.py → scheduler_events` (`all` / `hourly` / `daily`).
 
+### 5.3a Add a feature flag to HRMS Mobile Settings
+1. Add the `Check` field to `hrms_mobile_settings.json` with `"default": "1"`, bump the file's `modified` stamp, and add the fieldname to `field_order`.
+2. Return it from `api/v1/settings.get_feature_flags`, and seed it in `install.py`.
+3. **Write a backfill patch.** HRMS Mobile Settings is a **Single**: `tabSingles` stores only keys that have actually been written, so a declared `default` never reaches an already-existing row — `get_feature_flags` would report the new flag as `false` on every installed site and the mobile app would hide the feature. Copy `patches/v1_0/seed_worklog_travel_flags.py`, which writes only the keys that are genuinely absent so an admin's deliberate "off" survives the next migrate.
+4. A flag that must be readable **before login** (only `enable_qr_login` so far) also has to be added to `get_branding`, since `get_feature_flags` requires a JWT.
+
 ### 5.4 Add a new DocType
 1. Prefer creating it via the desk with **developer mode ON** so JSON is generated correctly, then `bench migrate`.
 2. Name it `Mobile <Thing>`, place it under `hrms_adapter/doctype/`, module **"HRMS Adapter"**.
@@ -155,7 +161,7 @@ These areas break the mobile app or security if changed carelessly. Change only 
 | **`utils/response.py` envelope shape / `api_version`** | Public contract; the Flutter client parses this exact structure. |
 | **`hooks.py` `before_request`** | Auth (`validate_mobile_jwt_if_present`) runs for *every* request. A bug here breaks or unsecures the whole API. |
 | **`hooks.py` `doc_events`** | Each entry ties an HR doctype event to a notification. Removing one silently kills notifications. |
-| **`services/auth_service.py`** | JWT signing/validation, refresh rotation, blacklist, QR lifecycle, device-limit enforcement. Security-critical. |
+| **`services/auth_service.py`** | JWT signing/validation, refresh rotation, blacklist, device-limit enforcement. Security-critical. |
 | **Secrets** (`fcm_server_key`, `fcm_service_account_json`) | Read via `get_password(...)`. Never log, print, return in a response, or commit. |
 | **`auth_service._get_jwt_secret()`** | Derived from the site `encryption_key`. Never store it in a DocType; changing the site's `encryption_key` invalidates all live tokens. |
 | **`hrms_adapter` folder name & `modules.txt`** | Renaming breaks Frappe module resolution and existing data. |

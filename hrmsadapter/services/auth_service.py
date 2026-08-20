@@ -1,6 +1,6 @@
 """
-AuthService — JWT generation/validation, QR token lifecycle,
-refresh token rotation, and device upsert.
+AuthService — JWT generation/validation, refresh token rotation,
+and device upsert.
 
 Uses PyJWT (bundled with Frappe v15).
 JWT payload: { sub, device_id, jti, iat, exp }
@@ -13,11 +13,7 @@ from datetime import datetime, timezone
 
 import frappe
 import jwt
-from frappe.utils import add_to_date, cint, get_datetime, now_datetime
-
-# Reserved device id minted by consume_qr_token for desktop QR sessions. It has no
-# Mobile Device row by design, so device-state checks must skip it.
-QR_DESKTOP_DEVICE_ID = "desktop-qr"
+from frappe.utils import add_to_date, cint, now_datetime
 
 # Device state is read on every authenticated request; cache it briefly. Every
 # deliberate status write calls invalidate_device_state_cache(), so the TTL only
@@ -221,14 +217,14 @@ def assert_device_session_valid(claims: dict) -> None:
 	DB, so without this a revoked, expired, evicted or blocked device would keep
 	full API access — including generic /api/resource/* — until natural expiry.
 
-	Two deliberate escape hatches:
-	  * the desktop QR session, which has no device row by design;
-	  * a missing row (token minted before registration, or the row was hard
-	    deleted by tests / before_uninstall). Blocking never deletes a row, so
-	    failing open here cannot weaken the permanent block.
+	One deliberate escape hatch: a missing row (token minted before registration,
+	the row was hard deleted by tests / before_uninstall, or the token is a
+	leftover from the removed desktop-QR session, which never had a row).
+	Blocking never deletes a row, so failing open here cannot weaken the
+	permanent block.
 	"""
 	device_id = claims.get("device_id")
-	if not device_id or device_id == QR_DESKTOP_DEVICE_ID:
+	if not device_id:
 		return
 
 	state = get_device_state(device_id)
@@ -471,71 +467,6 @@ def get_user_devices(user: str, include_inactive: bool = False, limit: int = 20,
 
 
 # ---------------------------------------------------------------------------
-# QR Login lifecycle
-# ---------------------------------------------------------------------------
-
-def create_qr_token(ip: str) -> dict:
-	settings = _get_settings()
-	expiry_minutes = settings.qr_token_expiry_minutes or 5
-	token = frappe.generate_hash(length=32)
-	expiry = add_to_date(now_datetime(), minutes=expiry_minutes)
-
-	doc = frappe.new_doc("QR Login Token")
-	doc.token = token
-	doc.status = "Pending"
-	doc.expiry = expiry
-	doc.generated_from_ip = ip
-	doc.insert(ignore_permissions=True)
-	frappe.db.commit()
-
-	return {"qr_token": token, "expires_at": str(expiry), "poll_interval_seconds": 3}
-
-
-def scan_qr_token(token: str, user: str, device_id: str) -> None:
-	doc = _get_valid_qr_token(token, expected_status="Pending")
-	# Only link a device the scanning user actually owns.
-	row = get_device(device_id)
-	device_name = row.name if row and row.user == user and row.status == "Active" else None
-	doc.status = "Scanned"
-	doc.claimed_by_user = user
-	doc.claimed_device = device_name
-	doc.claimed_at = now_datetime()
-	doc.save(ignore_permissions=True)
-	frappe.db.commit()
-
-
-def consume_qr_token(token: str) -> str:
-	"""Called by mobile after user approves. Returns a JWT for the desktop session."""
-	doc = _get_valid_qr_token(token, expected_status="Scanned")
-	access_token = generate_access_token(doc.claimed_by_user, QR_DESKTOP_DEVICE_ID)
-	doc.status = "Consumed"
-	doc.session_data = access_token
-	doc.save(ignore_permissions=True)
-	frappe.db.commit()
-	return access_token
-
-
-def poll_qr_status(token: str) -> dict:
-	doc = frappe.db.get_value(
-		"QR Login Token",
-		{"token": token},
-		["status", "session_data", "expiry"],
-		as_dict=True,
-	)
-	if not doc:
-		return {"status": "Expired"}
-
-	if get_datetime(doc.expiry) < get_datetime(now_datetime()):
-		frappe.db.set_value("QR Login Token", {"token": token}, "status", "Expired")
-		return {"status": "Expired"}
-
-	result = {"status": doc.status}
-	if doc.status == "Consumed":
-		result["access_token"] = doc.session_data
-	return result
-
-
-# ---------------------------------------------------------------------------
 # User disable hook
 # ---------------------------------------------------------------------------
 
@@ -547,27 +478,3 @@ def on_user_update(doc, method=None):
 			"Mobile Device", filters={"user": doc.name, "status": "Active"}, pluck="name"
 		):
 			deactivate_device(name, "Revoked", "User Disabled")
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _get_valid_qr_token(token: str, expected_status: str) -> "frappe.Document":
-	name = frappe.db.get_value("QR Login Token", {"token": token}, "name")
-	if not name:
-		frappe.throw("Invalid QR token.", frappe.AuthenticationError)
-
-	doc = frappe.get_doc("QR Login Token", name)
-
-	if get_datetime(doc.expiry) < get_datetime(now_datetime()):
-		doc.status = "Expired"
-		doc.save(ignore_permissions=True)
-		frappe.throw("QR token has expired.", frappe.AuthenticationError)
-
-	if doc.status != expected_status:
-		frappe.throw(
-			f"QR token is in '{doc.status}' state, expected '{expected_status}'.",
-			frappe.ValidationError,
-		)
-	return doc

@@ -74,6 +74,11 @@ def get_branding():
 				"ios": s.app_store_url_ios,
 				"android": s.app_store_url_android,
 			},
+			# The only feature flag served to guests. The QR button lives on the
+			# login screen, which by definition runs before any JWT exists, so
+			# get_feature_flags cannot reach it. Every other flag stays behind
+			# auth — this one leaks nothing beyond "this site offers QR sign-in".
+			"enable_qr_login": bool(s.enable_qr_login),
 		}
 	)
 
@@ -93,6 +98,8 @@ def get_feature_flags():
 			"enable_checkin": bool(s.enable_checkin),
 			"enable_offline_sync": bool(s.enable_offline_sync),
 			"enable_announcements": bool(s.enable_announcements),
+			"enable_worklog": bool(s.enable_worklog),
+			"enable_travel": bool(s.enable_travel),
 			"enable_qr_login": bool(s.enable_qr_login),
 			"enable_push_notifications": bool(s.enable_push_notifications),
 		}
