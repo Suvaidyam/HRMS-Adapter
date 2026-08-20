@@ -77,10 +77,22 @@ before_request = ["hrmsadapter.decorators.auth.validate_mobile_jwt_if_present"]
 # -------------------------------------------------------------------------
 
 fixtures = [
-	{
-    "dt": "Custom DocPerm",
-    "filters": {
-      "parent": "HRMS Mobile Settings",
-		}
-	}
+	# {
+    # "dt": "Custom DocPerm",
+    # "filters": {
+    #   "parent": "HRMS Mobile Settings",
+	# 	}
+	# },
+	#   {
+    #     "dt": "Workspace",
+    #     "filters": [
+    #         ["name", "=", "Mobile App Login"]
+    #     ]
+    # },
+    # {
+    #     "dt": "Custom HTML Block",
+    #     "filters": [
+    #         ["name", "=", "QR Code"]
+    #     ]
+    # }
 ]
