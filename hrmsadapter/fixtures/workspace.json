@@ -1,0 +1,36 @@
+[
+ {
+  "charts": [],
+  "content": "[{\"id\":\"RgclF4-WwL\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Mobile App Login</span>\",\"col\":12}},{\"id\":\"oNOmvDNmo5\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"QR Code\",\"col\":12}}]",
+  "custom_blocks": [
+   {
+    "custom_block_name": "QR Code",
+    "label": "QR Code",
+    "parent": "Mobile App Login",
+    "parentfield": "custom_blocks",
+    "parenttype": "Workspace"
+   }
+  ],
+  "docstatus": 0,
+  "doctype": "Workspace",
+  "for_user": "",
+  "hide_custom": 0,
+  "icon": "customer",
+  "indicator_color": "",
+  "is_hidden": 0,
+  "label": "Mobile App Login",
+  "links": [],
+  "modified": "2026-08-20 13:33:21.858646",
+  "module": null,
+  "name": "Mobile App Login",
+  "number_cards": [],
+  "parent_page": "",
+  "public": 1,
+  "quick_lists": [],
+  "restrict_to_domain": null,
+  "roles": [],
+  "sequence_id": 39.0,
+  "shortcuts": [],
+  "title": "Mobile App Login"
+ }
+]
