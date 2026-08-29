@@ -174,6 +174,10 @@ def _get_fcm_tokens(user: str) -> list:
 
 def _build_fcm_payload(doc) -> dict:
 	data = {"notification_id": str(doc.name)}
+	if doc.reference_doctype:
+		data["reference_doctype"] = doc.reference_doctype
+	if doc.reference_name:
+		data["reference_name"] = doc.reference_name
 	if doc.deep_link:
 		data["deep_link"] = doc.deep_link
 	if doc.extra_data:
@@ -181,37 +185,79 @@ def _build_fcm_payload(doc) -> dict:
 			data.update(json.loads(doc.extra_data))
 		except Exception:
 			pass
+	# FCM's HTTP v1 API requires every `data` value to be a string.
+	data = {k: str(v) for k, v in data.items() if v is not None}
 
 	return {
 		"notification": {"title": doc.title, "body": doc.body},
 		"data": data,
-		"priority": "high" if doc.priority == "high" else "normal",
+		"android": {"priority": "high" if doc.priority == "high" else "normal"},
 	}
 
 
+#: OAuth2 access tokens are valid ~1h; cache a little under that so a send
+#: never races an expiry that already happened.
+_FCM_TOKEN_CACHE_KEY = "hrmsadapter:fcm_access_token"
+_FCM_TOKEN_CACHE_SECONDS = 50 * 60
+
+
+def _get_fcm_access_token(settings) -> str:
+	"""Return a cached (or freshly minted) OAuth2 bearer token for FCM v1."""
+	cached = frappe.cache().get_value(_FCM_TOKEN_CACHE_KEY)
+	if cached:
+		return cached
+
+	from google.auth.transport.requests import Request
+	from google.oauth2 import service_account
+
+	raw = settings.get_password("fcm_service_account_json")
+	if not raw:
+		raise ValueError("FCM service account JSON not configured.")
+
+	info = json.loads(raw)
+	credentials = service_account.Credentials.from_service_account_info(
+		info, scopes=["https://www.googleapis.com/auth/firebase.messaging"]
+	)
+	credentials.refresh(Request())
+
+	frappe.cache().set_value(
+		_FCM_TOKEN_CACHE_KEY, credentials.token, expires_in_sec=_FCM_TOKEN_CACHE_SECONDS
+	)
+	return credentials.token
+
+
 def _send_fcm(settings, token: str, payload: dict) -> str:
-	"""Send a single FCM message. Returns the message ID."""
+	"""Send a single FCM message via the HTTP v1 API. Returns the message name/ID."""
 	import requests
 
-	server_key = settings.get_password("fcm_server_key")
-	if not server_key:
-		raise ValueError("FCM server key not configured.")
+	project_id = settings.fcm_project_id
+	if not project_id:
+		raise ValueError("FCM project ID not configured.")
 
-	payload["to"] = token
+	access_token = _get_fcm_access_token(settings)
+
 	response = requests.post(
-		"https://fcm.googleapis.com/fcm/send",
-		json=payload,
+		f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send",
+		json={"message": {"token": token, **payload}},
 		headers={
-			"Authorization": f"key={server_key}",
+			"Authorization": f"Bearer {access_token}",
 			"Content-Type": "application/json",
 		},
 		timeout=10,
 	)
-	response.raise_for_status()
-	result = response.json()
-	if result.get("failure"):
-		raise ValueError(result.get("results", [{}])[0].get("error", "FCM error"))
-	return result.get("multicast_id", "")
+	if response.status_code == 401:
+		# Access token was rejected (e.g. clock skew, revoked key) — drop the
+		# cached one so the next attempt mints a fresh one instead of retrying
+		# the same bad token for the rest of its cache window.
+		frappe.cache().delete_value(_FCM_TOKEN_CACHE_KEY)
+	if not response.ok:
+		try:
+			message = response.json().get("error", {}).get("message", response.text)
+		except Exception:
+			message = response.text
+		raise ValueError(f"FCM error ({response.status_code}): {message}")
+
+	return response.json().get("name", "")
 
 
 # ---------------------------------------------------------------------------

@@ -10,6 +10,7 @@ dynamic = ["version"]
 dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
     "qrcode[pil]",
+    "google-auth", # FCM HTTP v1 API — OAuth2 from the service-account JSON
 ]
 
 [build-system]

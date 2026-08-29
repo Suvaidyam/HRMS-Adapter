@@ -22,6 +22,7 @@
   "enable_push_notifications",
   "col_fcm",
   "fcm_project_id",
+  "fcm_service_account_json",
   "rate_limit_and_authentication_tab",
   "section_auth",
   "enable_qr_login",
@@ -207,9 +208,10 @@
    "label": "Enable Push Notifications"
   },
   {
+   "description": "Unused by the current sender — FCM's legacy send API (fcm.googleapis.com/fcm/send) was shut down by Google in June 2024. Kept only for reference; see FCM Service Account JSON.",
    "fieldname": "fcm_server_key",
    "fieldtype": "Password",
-   "label": "FCM Server Key (Legacy)"
+   "label": "FCM Server Key (Legacy, unused)"
   },
   {
    "fieldname": "col_fcm",
@@ -219,6 +221,12 @@
    "fieldname": "fcm_project_id",
    "fieldtype": "Data",
    "label": "FCM Project ID"
+  },
+  {
+   "description": "Firebase service-account JSON (Project Settings → Service Accounts → Generate new private key). Used to authenticate with FCM's HTTP v1 API. Stored encrypted — read via get_password(\"fcm_service_account_json\"), never logged.",
+   "fieldname": "fcm_service_account_json",
+   "fieldtype": "Password",
+   "label": "FCM Service Account JSON"
   },
   {
    "fieldname": "section_rate",
@@ -297,7 +305,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-14 12:04:08.319334",
+ "modified": "2026-08-29 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS Adapter",
  "name": "HRMS Mobile Settings",
