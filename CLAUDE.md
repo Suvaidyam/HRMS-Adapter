@@ -81,8 +81,14 @@ Read config with the cached singleton, never by hardcoding:
 
 ```python
 settings = frappe.get_cached_doc("HRMS Mobile Settings")
-key = settings.get_password("fcm_server_key")   # secrets via get_password, never settings.fcm_server_key
+key = settings.get_password("fcm_service_account_json")   # secrets via get_password, never settings.fcm_service_account_json
 ```
+
+`notification_service._send_fcm` sends via FCM's **HTTP v1 API**, authenticating
+with an OAuth2 token derived from `fcm_service_account_json` (via the
+`google-auth` package — `_get_fcm_access_token`, cached in `frappe.cache()` for
+~50 minutes). `fcm_server_key` (the legacy `fcm.googleapis.com/fcm/send`
+server-key endpoint) is unused — Google shut that endpoint down in June 2024.
 
 There is **no `jwt_secret` setting**. The JWT signing key is derived per site from the
 site's `encryption_key` by `auth_service._get_jwt_secret()` — never stored, never seeded.
