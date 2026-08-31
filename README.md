@@ -118,8 +118,20 @@ Almost everything is configured from a **single singleton DocType**: open **HRMS
 
 ### Enabling push notifications
 
-1. Set `enable_push_notifications = 1` and fill the FCM credentials.
+1. Set `enable_push_notifications = 1`, `fcm_project_id`, and
+   `fcm_service_account_json` (a Firebase service-account key — Firebase
+   Console → Project Settings → Service Accounts → Generate new private key).
+   `fcm_server_key` (the legacy server key) is no longer read by the sender —
+   see below.
 2. Ensure the **scheduler is running** (`bench doctor` / `bench start`) — outgoing notifications are drained by the `all` scheduler event `process_notification_queue`.
+
+> ⚠️ `_send_fcm` sends via FCM's **HTTP v1 API**
+> (`fcm.googleapis.com/v1/projects/{project}/messages:send`), authenticating
+> with an OAuth2 token minted from `fcm_service_account_json` (via
+> `google-auth`). Google fully shut down the legacy
+> `fcm.googleapis.com/fcm/send` server-key endpoint in June 2024 — the
+> `fcm_server_key` field is kept only for reference and is not used to send
+> anything.
 
 ---
 
