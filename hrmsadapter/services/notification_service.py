@@ -296,16 +296,23 @@ def _notify_employee(doc, title: str, body: str):
 	)
 
 
-def on_leave_application_submit(doc, method=None):
-	_notify_approver(
-		doc,
-		title="Leave Application Submitted",
-		body=f"{doc.employee_name} applied for {doc.leave_type} leave.",
-		approver_field="leave_approver",
-	)
-
-
 def on_leave_application_update(doc, method=None):
+	# This app's Leave Application workflow never sets docstatus to 1 (every
+	# workflow state keeps doc_status "0" — confirmed on staging), so Frappe's
+	# on_submit event never fires here. The only reliable signal that the
+	# employee has sent the request for approval is workflow_state actually
+	# changing to the TL-pending state, whether that happened via the mobile
+	# app's WorkflowActionBar or Desk.
+	if (
+		doc.has_value_changed("workflow_state")
+		and doc.workflow_state == "Request Pending for TL Approval"
+	):
+		_notify_approver(
+			doc,
+			title="Leave Application Submitted",
+			body=f"{doc.employee_name} applied for {doc.leave_type} leave.",
+			approver_field="leave_approver",
+		)
 	if doc.status in ("Approved", "Rejected"):
 		_notify_employee(
 			doc,
@@ -322,16 +329,21 @@ def on_leave_application_cancel(doc, method=None):
 	)
 
 
-def on_expense_claim_submit(doc, method=None):
-	_notify_approver(
-		doc,
-		title="Expense Claim Submitted",
-		body=f"{doc.employee_name} submitted an expense claim of {doc.total_claimed_amount}.",
-		approver_field="expense_approver",
-	)
-
-
 def on_expense_claim_update(doc, method=None):
+	# Same reasoning as on_leave_application_update: this workflow's states
+	# all keep doc_status "0", so on_submit never fires even though the app
+	# already calls apply_workflow('Submit For TL Approval') right after
+	# creating the claim.
+	if (
+		doc.has_value_changed("workflow_state")
+		and doc.workflow_state == "Request Pending for TL Approval"
+	):
+		_notify_approver(
+			doc,
+			title="Expense Claim Submitted",
+			body=f"{doc.employee_name} submitted an expense claim of {doc.total_claimed_amount}.",
+			approver_field="expense_approver",
+		)
 	if doc.approval_status in ("Approved", "Rejected"):
 		_notify_employee(
 			doc,
