@@ -21,7 +21,7 @@
   "label": "Mobile App Login",
   "links": [],
   "modified": "2026-08-20 13:33:21.858646",
-  "module": null,
+  "module": "HRMS Adapter",
   "name": "Mobile App Login",
   "number_cards": [],
   "parent_page": "",
@@ -31,6 +31,7 @@
   "roles": [],
   "sequence_id": 39.0,
   "shortcuts": [],
-  "title": "Mobile App Login"
+  "title": "Mobile App Login",
+  "type": "Workspace"
  }
 ]

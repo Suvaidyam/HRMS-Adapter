@@ -18,12 +18,10 @@ before_uninstall = "hrmsadapter.install.before_uninstall"
 # -------------------------------------------------------------------------
 doc_events = {
 	"Leave Application": {
-		"on_submit": "hrmsadapter.services.notification_service.on_leave_application_submit",
 		"on_update": "hrmsadapter.services.notification_service.on_leave_application_update",
 		"on_cancel": "hrmsadapter.services.notification_service.on_leave_application_cancel",
 	},
 	"Expense Claim": {
-		"on_submit": "hrmsadapter.services.notification_service.on_expense_claim_submit",
 		"on_update": "hrmsadapter.services.notification_service.on_expense_claim_update",
 	},
 	"Shift Request": {
