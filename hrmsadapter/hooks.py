@@ -17,6 +17,13 @@ before_uninstall = "hrmsadapter.install.before_uninstall"
 # Document Events — Workflow Notification Triggers  [Phase 7]
 # -------------------------------------------------------------------------
 doc_events = {
+	# The generic bridge: Frappe creates one Notification Log per recipient for
+	# every Notification record an admin configures, so this single hook pushes
+	# all of them to the phone. Per-doctype entries below are only for alerts
+	# that are not expressible as a Notification record.
+	"Notification Log": {
+		"after_insert": "hrmsadapter.services.notification_service.on_notification_log_created",
+	},
 	"Leave Application": {
 		"on_update": "hrmsadapter.services.notification_service.on_leave_application_update",
 		"on_cancel": "hrmsadapter.services.notification_service.on_leave_application_cancel",
