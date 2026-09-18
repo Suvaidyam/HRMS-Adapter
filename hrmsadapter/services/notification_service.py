@@ -9,7 +9,8 @@ retry Failed notifications.
 import json
 
 import frappe
-from frappe.utils import add_to_date, now_datetime
+from frappe.query_builder.utils import Column
+from frappe.utils import add_to_date, now_datetime, strip_html
 
 
 DEEP_LINK_MAP = {
@@ -39,7 +40,7 @@ def send_to_user(
 	priority: str = "normal",
 ):
 	"""Create a queued Mobile Notification and enqueue FCM dispatch."""
-	if not frappe.db.table_exists("tabMobile Notification"):
+	if not frappe.db.table_exists("Mobile Notification"):
 		return
 
 	if not deep_link and reference_doctype and reference_name:
@@ -68,14 +69,17 @@ def send_to_user(
 
 def process_notification_queue():
 	"""Scheduler task — retry Failed notifications due for retry."""
-	if not frappe.db.table_exists("tabMobile Notification"):
+	if not frappe.db.table_exists("Mobile Notification"):
 		return
 
 	pending = frappe.get_all(
 		"Mobile Notification",
 		filters={
 			"status": "Failed",
-			"retry_count": ("<", frappe.db.sql("SELECT max_retries FROM `tabMobile Notification` LIMIT 1")),
+			# Column() compares against each row's OWN max_retries. Passing a
+			# frappe.db.sql() result here instead raised ValueError on every
+			# scheduler run, so nothing was ever retried.
+			"retry_count": ("<", Column("max_retries")),
 			"next_retry_at": ("<=", now_datetime()),
 		},
 		fields=["name"],
@@ -94,7 +98,7 @@ def process_notification_queue():
 # ---------------------------------------------------------------------------
 
 def _dispatch_notification(name: str):
-	if not frappe.db.table_exists("tabMobile Notification"):
+	if not frappe.db.table_exists("Mobile Notification"):
 		return
 
 	doc = frappe.get_doc("Mobile Notification", name)
@@ -191,7 +195,9 @@ def _build_fcm_payload(doc) -> dict:
 	return {
 		"notification": {"title": doc.title, "body": doc.body},
 		"data": data,
-		"android": {"priority": "high" if doc.priority == "high" else "normal"},
+		# FCM v1's AndroidConfig.priority is a protobuf enum — its JSON form is
+		# the exact enum name, so "HIGH"/"NORMAL", not lowercase.
+		"android": {"priority": "HIGH" if doc.priority == "high" else "NORMAL"},
 	}
 
 
@@ -269,17 +275,31 @@ def _notify_approver(doc, title: str, body: str, approver_field: str = None):
 	approver = getattr(doc, approver_field, None) if approver_field else None
 	if not approver:
 		return
-	for hook in frappe.get_hooks("before_mobile_notification"):
-		frappe.call(hook, doc=doc, to_user=approver, title=title, body=body)
-	send_to_user(
-		to_user=approver,
-		title=title,
-		body=body,
-		reference_doctype=doc.doctype,
-		reference_name=doc.name,
-	)
-	for hook in frappe.get_hooks("after_mobile_notification"):
-		frappe.call(hook, doc=doc, to_user=approver)
+	# These run inside the document's own on_update, so an exception here would
+	# fail the employee's workflow submission itself — e.g. an approver address
+	# that is not a User record raises LinkValidationError on insert. Never let
+	# a notification problem block the document it is reporting on; log it
+	# instead, so the failure stays visible rather than silent.
+	try:
+		for hook in frappe.get_hooks("before_mobile_notification"):
+			frappe.call(hook, doc=doc, to_user=approver, title=title, body=body)
+		send_to_user(
+			to_user=approver,
+			title=title,
+			body=body,
+			reference_doctype=doc.doctype,
+			reference_name=doc.name,
+			# An approval request is the one notification that must not sit in
+			# Doze until the next maintenance window.
+			priority="high",
+		)
+		for hook in frappe.get_hooks("after_mobile_notification"):
+			frappe.call(hook, doc=doc, to_user=approver)
+	except Exception:
+		frappe.log_error(
+			title="Mobile notification to approver failed",
+			message=f"{doc.doctype} {doc.name} -> {approver}\n\n{frappe.get_traceback()}",
+		)
 
 
 def _notify_employee(doc, title: str, body: str):
@@ -287,32 +307,73 @@ def _notify_employee(doc, title: str, body: str):
 	user = frappe.db.get_value("Employee", doc.employee, "user_id")
 	if not user:
 		return
-	send_to_user(
-		to_user=user,
-		title=title,
-		body=body,
-		reference_doctype=doc.doctype,
-		reference_name=doc.name,
-	)
+	try:
+		send_to_user(
+			to_user=user,
+			title=title,
+			body=body,
+			reference_doctype=doc.doctype,
+			reference_name=doc.name,
+		)
+	except Exception:
+		frappe.log_error(
+			title="Mobile notification to employee failed",
+			message=f"{doc.doctype} {doc.name} -> {user}\n\n{frappe.get_traceback()}",
+		)
+
+
+def on_notification_log_created(doc, method=None):
+	"""Push every Frappe Notification Log to that user's phone.
+
+	This is the single bridge between Frappe's own Notification doctype — where
+	an admin configures what to alert on, for any doctype, with any event and
+	condition — and FCM. It is deliberately not per-doctype: a new Notification
+	record starts reaching phones with no code change and no deployment.
+
+	Frappe creates one Notification Log per recipient (roles are already
+	expanded to users by then), so this runs once per person to notify.
+	"""
+	if not doc.for_user:
+		return
+	try:
+		settings = frappe.get_cached_doc("HRMS Mobile Settings")
+		if not settings.enable_push_notifications:
+			return
+
+		# Both fields are rendered from Jinja templates and can carry markup;
+		# a lock screen shows plain text. Mobile Notification requires both,
+		# so neither may end up empty.
+		title = strip_html(doc.subject or "").strip() or "Notification"
+		body = strip_html(doc.email_content or "").strip() or title
+		if len(body) > 200:
+			body = body[:197] + "..."
+
+		# reference_name is a Dynamic Link: Frappe rejects the insert when the
+		# referenced document does not exist, so only pass a complete pair.
+		reference_doctype = doc.document_type or None
+		reference_name = doc.document_name or None
+		if not (reference_doctype and reference_name):
+			reference_doctype = reference_name = None
+
+		send_to_user(
+			to_user=doc.for_user,
+			title=title,
+			body=body,
+			reference_doctype=reference_doctype,
+			reference_name=reference_name,
+			priority="high",
+		)
+	except Exception:
+		frappe.log_error(
+			title="Push for Notification Log failed",
+			message=f"{doc.name} -> {doc.for_user}\n\n{frappe.get_traceback()}",
+		)
 
 
 def on_leave_application_update(doc, method=None):
-	# This app's Leave Application workflow never sets docstatus to 1 (every
-	# workflow state keeps doc_status "0" — confirmed on staging), so Frappe's
-	# on_submit event never fires here. The only reliable signal that the
-	# employee has sent the request for approval is workflow_state actually
-	# changing to the TL-pending state, whether that happened via the mobile
-	# app's WorkflowActionBar or Desk.
-	if (
-		doc.has_value_changed("workflow_state")
-		and doc.workflow_state == "Request Pending for TL Approval"
-	):
-		_notify_approver(
-			doc,
-			title="Leave Application Submitted",
-			body=f"{doc.employee_name} applied for {doc.leave_type} leave.",
-			approver_field="leave_approver",
-		)
+	# Notifying the approver when this reaches "Request Pending for TL Approval"
+	# is configured as a Notification record ("Recommendation for Leave"), not
+	# coded here — see on_notification_log_created.
 	if doc.status in ("Approved", "Rejected"):
 		_notify_employee(
 			doc,
@@ -330,20 +391,8 @@ def on_leave_application_cancel(doc, method=None):
 
 
 def on_expense_claim_update(doc, method=None):
-	# Same reasoning as on_leave_application_update: this workflow's states
-	# all keep doc_status "0", so on_submit never fires even though the app
-	# already calls apply_workflow('Submit For TL Approval') right after
-	# creating the claim.
-	if (
-		doc.has_value_changed("workflow_state")
-		and doc.workflow_state == "Request Pending for TL Approval"
-	):
-		_notify_approver(
-			doc,
-			title="Expense Claim Submitted",
-			body=f"{doc.employee_name} submitted an expense claim of {doc.total_claimed_amount}.",
-			approver_field="expense_approver",
-		)
+	# Approver notification is configured as a Notification record
+	# ("Recommendation for Expense Claim"), not coded here.
 	if doc.approval_status in ("Approved", "Rejected"):
 		_notify_employee(
 			doc,

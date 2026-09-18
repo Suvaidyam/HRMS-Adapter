@@ -137,7 +137,7 @@ def _announcements_widget():
 		fields=["name", "title", "description", "publish_from", "publish_to"],
 		order_by="publish_from desc",
 		limit=5,
-	) if frappe.db.table_exists("tabAnnouncement") else []
+	) if frappe.db.table_exists("Announcement") else []
 
 
 _WIDGET_MAP = {
